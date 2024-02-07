@@ -29,7 +29,7 @@ library(tidyverse)
 
 # Data Manipulation and Checking ------------------------------------------
 
-dat <- read_csv("lter cnd wg projects/MAPmaster_yrs1thru19_speciesnames_CLEAN.csv")
+dat <- read_csv("data/MAPmaster_yrs1thru19_speciesnames_CLEAN.csv")
 #View(dat)
 glimpse(dat)
 unique(dat$common_name) #all seems accounted for
@@ -75,46 +75,33 @@ glimpse(catch_all)
 
 # CPUE calculations -------------------------------------------------------
 
-#general cpue for each sampling date by site and bout
+#general cpue calculations
 cpue_summary <- catch_all |>
   group_by(s_date, s.yr, s.mo, SITE, BOUT) |> 
-  dplyr::summarise(distance=mean(Distance), #should just be whatever the distance shocked on a given bout is
-                   snook_100m=(catchnumber_snook/distance)*100,
-                   bass_100m=(catchnumber_bass/distance)*100,
-                   invasive_100m=(catchnumber_invasive/distance)*100,
-                   sf_100m= (catchnumber_sf/distance)*100)
-
-#lazy way of doing this (maybe?), but cleans up dataset keeping real zeros and removing all of the extra 
-cpue_clean <- cpue_summary |> 
-  group_by(s_date, s.yr, s.mo) |> 
-  dplyr::summarise(snook_100m = max(snook_100m, na.rm = T),
-                   bass_100m = max(bass_100m, na.rm = T),
-                   invasive_100m = max(invasive_100m, na.rm = T),
-                   sf_100m = max(sf_100m, na.rm = T))
+  dplyr::reframe(distance=mean(Distance), #should just be whatever the distance shocked on a given bout is
+                   snook_100m=(sum(catchnumber_snook)/distance)*100,
+                   bass_100m=(sum(catchnumber_bass)/distance)*100,
+                   invasive_100m=(sum(catchnumber_invasive)/distance)*100,
+                   sf_100m=(sum(catchnumber_sf)/distance)*100)
 
 #monthly mean cpue for each species of interest
-cpue_monthly_mean <- cpue_clean |> 
+monthly_cpue <- cpue_summary |> 
   group_by(s.yr, s.mo) |> 
-  dplyr:: summarise(snook_cpue_mean = mean(snook_100m),
+  dplyr::reframe(snook_cpue_mean = mean(snook_100m),
                     log_snook_cpue_mean = log(snook_cpue_mean+1),
                     bass_cpue_mean = mean(bass_100m),
                     log_bass_cpue_mean = log(bass_cpue_mean+1),
                     invasive_cpue_mean = mean(invasive_100m),
                     log_invasive_cpue_mean = log(invasive_cpue_mean+1),
                     sf_cpue_mean = mean(sf_100m),
-                    log_sf_cpue_mean = log(sf_cpue_mean+1))
-
-#weird na in dates, so getting rid of it
-cpue_monthly_mean_clean <- na.omit(cpue_monthly_mean)
-
-#adding date back in for plotting
-monthly_cpue <- cpue_monthly_mean_clean |> 
-  mutate(s.day = 01,
-         s_date = ymd(paste(s.yr,s.mo,s.day, sep = "-")))
+                    log_sf_cpue_mean = log(sf_cpue_mean+1)) |> 
+      na.omit() |> 
+      mutate(s.day = 01,
+             s_date = ymd(paste(s.yr,s.mo,s.day, sep = "-")))
 
 glimpse(monthly_cpue)
 
-# CPUE FIGURES ------------------------------------------------------------
+# CPUE Monthly Mean Figures -----------------------------------------------
 
 ### Common Snook CPUE w smoother
 snook_plot <- ggplot(monthly_cpue, aes(x=as.Date(s_date), y = as.numeric(snook_cpue_mean), group = 1)) +
@@ -135,7 +122,7 @@ snook_plot <- ggplot(monthly_cpue, aes(x=as.Date(s_date), y = as.numeric(snook_c
   scale_x_date(date_labels = "%Y",breaks ='1 year')
 snook_plot
 
-# ggsave(filename='plots/snook_cpue_yrs1thru19.png', plot = snook_plot,
+# ggsave(filename='plots/snook_cpue_yrs1thru19revised.png', plot = snook_plot,
 #        scale = 2.5,
 #        width = 10,
 #        height = 5,
@@ -161,7 +148,7 @@ bass_plot <- ggplot(monthly_cpue, aes(x=as.Date(s_date), y = as.numeric(bass_cpu
   scale_x_date(date_labels = "%Y",breaks ='1 year')
 bass_plot
 
-# ggsave(filename='plots/bass_cpue_yrs1thru19.png', plot = bass_plot,
+# ggsave(filename='plots/bass_cpue_yrs1thru19revised.png', plot = bass_plot,
 #        scale = 2.5,
 #        width = 10,
 #        height = 5,
@@ -187,7 +174,7 @@ invasives_plot <- ggplot(monthly_cpue, aes(x=as.Date(s_date), y = as.numeric(inv
   scale_x_date(date_labels = "%Y",breaks ='1 year')
 invasives_plot
 
-# ggsave(filename='plots/invasives_cpue_yrs1thru19.png', plot = invasives_plot,
+# ggsave(filename='plots/invasives_cpue_yrs1thru19revised.png', plot = invasives_plot,
 #        scale = 2.5,
 #        width = 10,
 #        height = 5,
@@ -211,6 +198,112 @@ sf_plot <- ggplot(monthly_cpue, aes(x=as.Date(s_date), y = as.numeric(sf_cpue_me
         axis.text.x = element_text(angle = 45, hjust = 1., vjust = 1.1),axis.text = element_text(color="black"),
         panel.grid.minor = element_blank(),legend.position = "none") + 
   scale_x_date(date_labels = "%Y",breaks ='1 year')
+sf_plot
+
+# ggsave(filename='plots/sunfish_cpue_yrs1thru19_revised.png', plot = sf_plot,
+#        scale = 2.5,
+#        width = 10,
+#        height = 5,
+#        units = c("cm"),
+#        dpi = 300)
+
+# Daily CPUE Figures ------------------------------------------------------
+
+### Common Snook CPUE w smoother
+snook_plot <- ggplot(monthly_cpue, aes(x=as.Date(s_date), y = as.numeric(snook_cpue_mean), group = 1)) +
+      geom_line(color = "black", linewidth = 0.5) +
+      geom_point(size = 1.0) +
+      geom_smooth() +
+      labs(x = "Date", 
+           y = "Common Snook CPUE (n/100m)") +
+      theme(panel.grid.major = element_blank(), 
+            # panel.grid.minor = element_blank(),
+            panel.background = element_blank(), 
+            axis.line = element_line(colour = "black"),
+            # plot.title = element_text(hjust = 0.5, size=14, face="bold", color = "black"),
+            # axis.text = element_text(size=12,face="bold", color = "black"),
+            # axis.title = element_text(size=12,face="bold", color = "black"), 
+            axis.text.x = element_text(angle = 45, hjust = 1., vjust = 1.1),axis.text = element_text(color="black"),
+            panel.grid.minor = element_blank(),legend.position = "none") + 
+      scale_x_date(date_labels = "%Y",breaks ='1 year')
+snook_plot
+
+# ggsave(filename='plots/snook_cpue_yrs1thru19.png', plot = snook_plot,
+#        scale = 2.5,
+#        width = 10,
+#        height = 5,
+#        units = c("cm"),
+#        dpi = 300)
+
+### Largemouth Bass CPUE w smoother
+bass_plot <- ggplot(monthly_cpue, aes(x=as.Date(s_date), y = as.numeric(bass_cpue_mean), group = 1)) +
+      geom_line(color = "black", linewidth = 0.5) +
+      geom_point(size = 1.0) +
+      geom_smooth() +
+      labs(x = "Date", 
+           y = "Florida Largemouth Bass CPUE (n/100m)") +
+      theme(panel.grid.major = element_blank(), 
+            # panel.grid.minor = element_blank(),
+            panel.background = element_blank(), 
+            axis.line = element_line(colour = "black"),
+            # plot.title = element_text(hjust = 0.5, size=14, face="bold", color = "black"),
+            # axis.text = element_text(size=12,face="bold", color = "black"),
+            # axis.title = element_text(size=12,face="bold", color = "black"), 
+            axis.text.x = element_text(angle = 45, hjust = 1., vjust = 1.1),axis.text = element_text(color="black"),
+            panel.grid.minor = element_blank(),legend.position = "none") + 
+      scale_x_date(date_labels = "%Y",breaks ='1 year')
+bass_plot
+
+# ggsave(filename='plots/bass_cpue_yrs1thru19.png', plot = bass_plot,
+#        scale = 2.5,
+#        width = 10,
+#        height = 5,
+#        units = c("cm"),
+#        dpi = 300)
+
+### Invasive Species CPUE w smoother
+invasives_plot <- ggplot(monthly_cpue, aes(x=as.Date(s_date), y = as.numeric(invasive_cpue_mean), group = 1)) +
+      geom_line(color = "black", linewidth = 0.5) +
+      geom_point(size = 1.0) +
+      geom_smooth() +
+      labs(x = "Date", 
+           y = "Invasive Fish Species CPUE (n/100m)") +
+      theme(panel.grid.major = element_blank(), 
+            # panel.grid.minor = element_blank(),
+            panel.background = element_blank(), 
+            axis.line = element_line(colour = "black"),
+            # plot.title = element_text(hjust = 0.5, size=14, face="bold", color = "black"),
+            # axis.text = element_text(size=12,face="bold", color = "black"),
+            # axis.title = element_text(size=12,face="bold", color = "black"), 
+            axis.text.x = element_text(angle = 45, hjust = 1., vjust = 1.1),axis.text = element_text(color="black"),
+            panel.grid.minor = element_blank(),legend.position = "none") + 
+      scale_x_date(date_labels = "%Y",breaks ='1 year')
+invasives_plot
+
+# ggsave(filename='plots/invasives_cpue_yrs1thru19.png', plot = invasives_plot,
+#        scale = 2.5,
+#        width = 10,
+#        height = 5,
+#        units = c("cm"),
+#        dpi = 300)
+
+### Sunfish Species CPUE w smoother
+sf_plot <- ggplot(monthly_cpue, aes(x=as.Date(s_date), y = as.numeric(sf_cpue_mean), group = 1)) +
+      geom_line(color = "black", linewidth = 0.5) +
+      geom_point(size = 1.0) +
+      geom_smooth() +
+      labs(x = "Date", 
+           y = "Lepomis spp. CPUE (n/100m)") +
+      theme(panel.grid.major = element_blank(), 
+            # panel.grid.minor = element_blank(),
+            panel.background = element_blank(), 
+            axis.line = element_line(colour = "black"),
+            # plot.title = element_text(hjust = 0.5, size=14, face="bold", color = "black"),
+            # axis.text = element_text(size=12,face="bold", color = "black"),
+            # axis.title = element_text(size=12,face="bold", color = "black"), 
+            axis.text.x = element_text(angle = 45, hjust = 1., vjust = 1.1),axis.text = element_text(color="black"),
+            panel.grid.minor = element_blank(),legend.position = "none") + 
+      scale_x_date(date_labels = "%Y",breaks ='1 year')
 sf_plot
 
 # ggsave(filename='plots/sunfish_cpue_yrs1thru19.png', plot = sf_plot,
@@ -494,8 +587,8 @@ sf_mean_imp_forviewing <-data.frame(sf_mean_imp_spec) |>
 summary(sf_mean_imp_forviewing) #make sure imputations didn't generate crazy-ass weights
 
 #CPUE by date/bout for ind sf species
-sf_bout_sum_sp <- sf_mean_imp_spec |>  
-  group_by(s_date,s.yr,s.mo,SITE,BOUT,common_name) |>  
+sf_bout_sum_sp <- sf_mean_imp_spec |>
+  group_by(s_date,s.yr,s.mo,SITE,BOUT,common_name) |>
   summarise(distance1=mean(Distance),
             catch = sum(as.numeric(catchnumber_sf), na.rm = T),
             wt_biomass_g=sum(wetbiomass_g_imp),
@@ -506,9 +599,17 @@ sf_bout_sum_sp <- sf_mean_imp_spec |>
 glimpse(sf_bout_sum_sp)
 summary(sf_bout_sum_sp)
 
-# CPUE by date/bout for pooled sf species
-sf_bout_sum <- sf_mean_imp_spec |>  
-  group_by(s_date,s.yr,s.mo,SITE,BOUT) |>  
+# sf_bout_sum <- sf_mean_imp_spec |>
+#       group_by(s_date, s.yr, s.mo, SITE, BOUT) |> 
+#       dplyr::reframe(distance=mean(Distance), #should just be whatever the distance shocked on a given bout is
+#                      catch = sum(as.numeric(catchnumber_sf), na.rm = T),
+#                      wt_biomass_g = sum(wetbiomass_g_imp),
+#                      cpue_biomass_100m = (sum(wt_biomass_g)/distance),
+#                      cpue_100m = (sum(catch)/distance)*100)
+
+# # CPUE by date/bout for pooled sf species
+sf_bout_sum <- sf_mean_imp_spec |>
+  group_by(s_date,s.yr,s.mo,SITE,BOUT) |>
   summarise(distance1=mean(Distance),
             catch = sum(as.numeric(catchnumber_sf), na.rm = T),
             wt_biomass_g=sum(wetbiomass_g_imp),
@@ -519,9 +620,19 @@ sf_bout_sum <- sf_mean_imp_spec |>
 glimpse(sf_bout_sum)
 summary(sf_bout_sum)
 
-#monthly mean cpue for pooled sf species
-sf_biomass_cpue_monthly_mean <- sf_bout_sum |> 
-  group_by(s.yr, s.mo) |> 
+#monthly mean cpue for each species of interest
+# sf_biomass_cpue_monthly_mean <- sf_bout_sum |> 
+#       group_by(s.yr, s.mo) |> 
+#       dplyr::reframe(cpue_biomass_100m_mean = mean(cpue_biomass_100m)) |> 
+#       na.omit() |> 
+#       mutate(s.day = 01,
+#              s_date = ymd(paste(s.yr,s.mo,s.day, sep = "-")))
+# 
+# glimpse(monthly_cpue)
+
+# #monthly mean cpue for pooled sf species
+sf_biomass_cpue_monthly_mean <- sf_bout_sum |>
+  group_by(s.yr, s.mo) |>
   dplyr:: summarise(cpue_biomass_100m_mean = mean(cpue_biomass_100m),
                     LOG_cpue_biomass_100m_mean = log(cpue_biomass_100m_mean),
                     LOGplus1_cpue_biomass_100m_mean = 1+log(cpue_biomass_100m_mean))
@@ -532,7 +643,7 @@ summary(sf_biomass_cpue_monthly_mean)
 sf_biomass_cpue_monthly_mean_clean <- na.omit(sf_biomass_cpue_monthly_mean)
 
 #adding date back in for plotting
-sf_biomass_monthly_cpue <- sf_biomass_cpue_monthly_mean_clean |> 
+sf_biomass_monthly_cpue <- sf_biomass_cpue_monthly_mean_clean |>
   mutate(s.day = 01,
          s_date = ymd(paste(s.yr,s.mo,s.day, sep = "-")))
 
@@ -557,7 +668,7 @@ sf_biomass_plot <- ggplot(sf_biomass_monthly_cpue, aes(x=as.Date(s_date), y = as
   scale_x_date(date_labels = "%Y",breaks ='1 year')
 sf_biomass_plot
 
-# ggsave(filename='plots/sf_biomass_cpue_yrs1thru19.png', plot = sf_biomass_plot,
+# ggsave(filename='plots/sf_biomass_cpue_yrs1thru19revised.png', plot = sf_biomass_plot,
 #        scale = 2.5,
 #        width = 10,
 #        height = 5,
