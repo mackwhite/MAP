@@ -7,7 +7,7 @@
 librarian::shelf(readr, readxl, dplyr, ggplot2, lubridate, tidyverse)
 
 # read the data -----------------------------------------------------------
-data <- read_excel("data/mo215_feb2024.xlsx")
+data <- read_excel("data/mo215_current.xlsx")
 
 # data manipulation + SE calculation --------------------------------------
 data <- data %>%
@@ -32,9 +32,9 @@ ggplot() +
       geom_line(data = mean_se_data, aes(x = DayOfYear, y = MeanStage), size = 1.5, color = "black") +
       geom_ribbon(data = mean_se_data, aes(x = DayOfYear, ymin = MeanStage - SE, ymax = MeanStage + SE), fill = "#6E6E6E", alpha = 0.2) +
       scale_x_continuous(breaks = breaks, labels = labels) +
-      labs(title = "MO-215 Water Levels with Mean and Standard Error",
+      labs(title = "Daily MO-215 Water Levels w/ Mean + Standard Error (1994-Present)",
            x = "Month",
-           y = "Stage (cm)",
+           y = "Stage (cm; elevation corrected)",
            color = "Year") +
       theme_minimal() + 
       theme(plot.title = element_text(hjust = 0.5, face = "bold"),
@@ -48,8 +48,8 @@ ggplot() +
             panel.grid.minor.x = element_blank(),
             axis.line = element_line(color = "black")) 
 
-ggsave(filename = "plots/mo215_02072024.jpeg", 
-       plot = last_plot(), 
-       width = 10, height = 5, 
-       dpi = 300)
+# ggsave(filename = "plots/mo215_02262024.jpeg",
+#        plot = last_plot(),
+#        width = 10, height = 5,
+#        dpi = 300)
 
