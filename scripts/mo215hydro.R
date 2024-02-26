@@ -9,18 +9,22 @@ librarian::shelf(readr, readxl, dplyr, ggplot2, lubridate, tidyverse)
 # read the data -----------------------------------------------------------
 data <- read_excel("data/mo215_current.xlsx")
 
-# data manipulation + SE calculation --------------------------------------
+# data manipulation -------------------------------------------------------
 data <- data %>%
       mutate(Date = as.Date(Date),
              Year = year(Date),
              Month = month(Date),
-             DayOfYear = yday(Date)) %>%
-      filter(Year %in% c(2018, 2021, 2023, 2024))
+             DayOfYear = yday(Date))
 
+# calculate mean and SE for the entire dataset ----------------------------
 mean_se_data <- data %>%
       group_by(DayOfYear) %>%
       summarise(MeanStage = mean(`Stage (cm)`),
                 SE = sd(`Stage (cm)`) / sqrt(n()))
+
+# filter data for specific years for plotting -----------------------------
+filtered_data <- data %>%
+      filter(Year %in% c(2018, 2021, 2023, 2024))
 
 # generate breaks + labels for plotting -----------------------------------
 breaks <- yday(as.Date(paste0("2023-", 1:12, "-01")))
@@ -28,7 +32,7 @@ labels <- month.name[1:12]
 
 # generate plot -----------------------------------------------------------
 ggplot() +
-      geom_line(data = data, aes(x = DayOfYear, y = `Stage (cm)`, color = as.factor(Year)), size = 1) +
+      geom_line(data = filtered_data, aes(x = DayOfYear, y = `Stage (cm)`, color = as.factor(Year)), size = 1) +
       geom_line(data = mean_se_data, aes(x = DayOfYear, y = MeanStage), size = 1.5, color = "black") +
       geom_ribbon(data = mean_se_data, aes(x = DayOfYear, ymin = MeanStage - SE, ymax = MeanStage + SE), fill = "#6E6E6E", alpha = 0.2) +
       scale_x_continuous(breaks = breaks, labels = labels) +
