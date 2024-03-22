@@ -19,12 +19,13 @@ data <- data %>%
 # calculate mean and SE for the entire dataset ----------------------------
 mean_se_data <- data %>%
       group_by(DayOfYear) %>%
+      filter(Year %in% c(2005:2016)) |> 
       summarise(MeanStage = mean(`Stage (cm)`),
                 SE = sd(`Stage (cm)`) / sqrt(n()))
 
 # filter data for specific years for plotting -----------------------------
 filtered_data <- data %>%
-      filter(Year %in% c(2018, 2021, 2023, 2024))
+      filter(Year %in% c(2017:2024))
 
 # generate breaks + labels for plotting -----------------------------------
 breaks <- yday(as.Date(paste0("2023-", 1:12, "-01")))
