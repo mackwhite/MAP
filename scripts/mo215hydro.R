@@ -25,7 +25,7 @@ mean_se_data <- data %>%
 
 # filter data for specific years for plotting -----------------------------
 filtered_data <- data %>%
-      filter(Year %in% c(2017:2024))
+      filter(Year %in% c(2016:2024))
 
 # generate breaks + labels for plotting -----------------------------------
 breaks <- yday(as.Date(paste0("2023-", 1:12, "-01")))
@@ -53,7 +53,7 @@ ggplot() +
             panel.grid.minor.x = element_blank(),
             axis.line = element_line(color = "black")) 
 
-# ggsave(filename = "plots/mo215_04232024.jpeg",
+# ggsave(filename = "plots/mo215_04232024_with2016.jpeg",
 #        plot = last_plot(),
 #        width = 10, height = 5,
 #        dpi = 300)
