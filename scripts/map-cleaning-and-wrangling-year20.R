@@ -1,6 +1,6 @@
 ###project: MAP
 ###author(s): Mack White
-###goal(s): zero-filling of MAP Year 20 through April
+###goal(s): cleaning of MAP Year 20 (i.e., 2024) through April
 ###date(s): April 2024
 ###note(s):
 
