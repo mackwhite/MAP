@@ -173,7 +173,137 @@ step_2_sl <- rbind(step_2_sl_minusSnookAndBass, snook_bass_preserved) |>
 na_count_per_column <- sapply(step_2_sl, function(x) sum(is.na(x)))
 print(na_count_per_column)
 
-# missing weight and SL coming from "no fish collected", "Sunfishes", "Snook", "Largemouth bass"
-# set aside "NFC" and then for sunfishes, take average for "lepomis" genus, and for snook and
-# largemouth bass do LW regressions, then NA fill similar to above.
-# then go ahead and do zero fill (keeping "NFC" out, then tack that on at the very end!)
+test_sl_na <- step_2_sl |> 
+      filter(is.na(sl))
+unique(test_sl_na$common_name)
+# (1) NFC, (2) Snook, (3) Largemouth Bass
+
+test_weight_na <- step_2_sl |> 
+      filter(is.na(weight))
+unique(test_weight_na$common_name)
+# (1) Sunfishes, (2) NFC, (3) Snook, (4) Largemouth Bass
+
+# NA fill for "Sunfishes" -------------------------------------------------
+step_2_sl_NOsunfishes <- step_2_sl |> filter(genus != "Lepomis")
+step_2_sl_sunfishes <- step_2_sl |> filter(genus == "Lepomis")
+
+step_2_sl_sunfishesNAfill  <- step_2_sl_sunfishes |> 
+      ### NA fill - impute step one
+      group_by(year, month, drainage) |> 
+      mutate(sl = ifelse(is.na(sl), mean(sl, na.rm = TRUE), sl),
+             weight = ifelse(is.na(weight), mean(weight, na.rm = TRUE), weight)) |> 
+      ungroup() |> 
+      ### NA fill - impute step two
+      group_by(year, month) |> 
+      mutate(sl = ifelse(is.na(sl), mean(sl, na.rm = TRUE), sl),
+             weight = ifelse(is.na(weight), mean(weight, na.rm = TRUE), weight)) |> 
+      ungroup() |> 
+      ### NA fill - impute step three
+      group_by(year) |> 
+      mutate(sl = ifelse(is.na(sl), mean(sl, na.rm = TRUE), sl),
+             weight = ifelse(is.na(weight), mean(weight, na.rm = TRUE), weight)) |> 
+      ungroup() |> 
+      ### NA fill - impute step four
+      group_by(genus) |> 
+      mutate(sl = ifelse(is.na(sl), mean(sl, na.rm = TRUE), sl),
+             weight = ifelse(is.na(weight), mean(weight, na.rm = TRUE), weight)) |> 
+      ungroup()
+
+step_2_sl_join1 <- rbind(step_2_sl_NOsunfishes, step_2_sl_sunfishesNAfill)
+test_weight_na <- step_2_sl_join1 |> 
+      filter(is.na(weight))
+unique(test_weight_na$common_name) #sunfishes taken care of
+
+na_count_per_column <- sapply(step_2_sl_join1, function(x) sum(is.na(x)))
+print(na_count_per_column)
+
+# use length-weight regressions to NA fill for Snook and Bass -------------
+step_2_sl_NOsnook_bass <- step_2_sl_join1 |> filter(!common_name %in% c("Snook", "Largemouth bass"))
+step_2_sl_snook_bass <- step_2_sl_join1 |> filter(common_name %in% c("Snook", "Largemouth bass"))
+
+step_2_sl_snook_NAfill <- step_2_sl_snook_bass |> 
+      filter(common_name=='Snook') |>  
+      mutate(weight_g = ifelse(!is.na(weight), 
+                                   weight*1000, 
+                                   0.009504406*sl^3.078241))
+
+step_2_sl_bass_NAfill <- step_2_sl_snook_bass |> 
+      filter(common_name=='Largemouth bass') |>  
+      mutate(weight_g = ifelse(!is.na(weight), 
+                                   weight*1000,
+                                   0.01218249*sl^3.200356))
+
+step_2_sl_snook_bass_NAfill <- rbind(step_2_sl_snook_NAfill, step_2_sl_bass_NAfill)
+
+step_2_sl_NOsnook_bass_grams <- step_2_sl_NOsnook_bass |> 
+      mutate(weight_g = weight*100)
+
+step_2_sl_join2 <- rbind(step_2_sl_snook_bass_NAfill, step_2_sl_NOsnook_bass_grams)
+
+test_weight_na <- step_2_sl_join2 |> 
+      filter(is.na(weight_g))
+unique(test_weight_na$common_name) #still have some snook and bass without weights
+
+na_count_per_column <- sapply(step_2_sl_join2, function(x) sum(is.na(x)))
+print(na_count_per_column) #took care of a little over 1000 missing weights from snook and bass
+
+# NA fill for "Snook" and "Largemouth bass" -------------------------------------------------
+step_2_sl_NFC_preserved <- step_2_sl_join2 |> 
+      filter(common_name == "No fishes collected")
+      #hold off on this join until after zero fill - 70 instances
+
+step_2_sl_NO_NFC <- step_2_sl_join2 |> 
+      filter(common_name != "No fishes collected")
+
+step_2_sl_NO_NFC_FINAL_NA_FILL <- step_2_sl_NO_NFC |> 
+      ### NA fill - impute step one
+      group_by(common_name, year, month, drainage) |> 
+      mutate(sl = ifelse(is.na(sl), mean(sl, na.rm = TRUE), sl),
+             weight_g = ifelse(is.na(weight_g), mean(weight_g, na.rm = TRUE), weight_g)) |> 
+      ungroup() |> 
+      ### NA fill - impute step two
+      group_by(common_name, year, month) |> 
+      mutate(sl = ifelse(is.na(sl), mean(sl, na.rm = TRUE), sl),
+             weight_g = ifelse(is.na(weight_g), mean(weight_g, na.rm = TRUE), weight_g)) |>
+      ungroup() |> 
+      ### NA fill - impute step three
+      group_by(common_name, year) |> 
+      mutate(sl = ifelse(is.na(sl), mean(sl, na.rm = TRUE), sl),
+             weight_g = ifelse(is.na(weight_g), mean(weight_g, na.rm = TRUE), weight_g)) |>
+      ungroup() |> 
+      ### NA fill - impute step four
+      group_by(common_name) |> 
+      mutate(sl = ifelse(is.na(sl), mean(sl, na.rm = TRUE), sl),
+             weight_g = ifelse(is.na(weight_g), mean(weight_g, na.rm = TRUE), weight_g)) |>
+      ungroup()
+
+na_count_per_column <- sapply(step_2_sl_NO_NFC_FINAL_NA_FILL, function(x) sum(is.na(x)))
+print(na_count_per_column) #no more NAs
+
+step_2_sl_join3 <- rbind(step_2_sl_NO_NFC_FINAL_NA_FILL, step_2_sl_NFC_preserved)
+
+
+# prepare data and join sl and tl data ------------------------------------
+
+### total length dataset
+step_2_tl_final <- step_2_tl |> 
+      mutate(weight_g = weight*1000) |> 
+      rename(weight_kg = weight)
+
+na_count_per_column <- sapply(step_2_tl_final, function(x) sum(is.na(x)))
+print(na_count_per_column) #NA fixed for TL and weight_g
+glimpse(step_2_tl_final)
+
+### standard length dataset
+step_2_sl_final <- step_2_sl_join3 |> 
+      rename(weight_kg = weight)
+
+na_count_per_column <- sapply(step_2_sl_final, function(x) sum(is.na(x)))
+print(na_count_per_column) #NA fixed for SL and weight_g (minus "No fishes collected"; 70 instances)
+
+glimpse(step_2_sl_final)
+
+### join the two datasets
+map_all_thru_042024 <- rbind(step_2_sl_final, step_2_tl_final)
+# writexl::write_xlsx(map_all_thru_042024, "data/map_all_thru_042024.xlsx")
+# write_csv(map_all_thru_042024, "data/map_all_thru_042024.csv")
