@@ -344,3 +344,217 @@ invasive_richness_2 <- invasive_richness_1 |>
 # join all datasets for richness and read out ------------------------
 ssr_richness <- rbind(sunfish_richness_2, invasive_richness_2)
 # writexl::write_xlsx(ssr_richness, "data/ssr_richness.xlsx")
+
+###########################################################################
+# task 9 mesoconsumer cpue/biomass ts plots -------------------------------
+###########################################################################
+
+mc_ts <- dt |> 
+      filter(common_name %in% c("Snook", "Largemouth bass")) |> 
+      filter(site %in% c("RB8", "RB9", "RB10", "RB11", "RB13")) |> 
+      mutate(s_date = make_date(year = calendar_year, month = month, day = 1)) |> 
+      group_by(common_name, water_year, s_date, site, bout) |> 
+      summarize(count = sum(catch_number, na.rm = TRUE),
+                count_m = count/distance,
+                count_100m = count_m*100,
+                biomass = sum(weight_g*catch_number),
+                biomass_m = biomass/distance,
+                biomass_100m = biomass_m*100) |> 
+      ungroup() |> 
+      group_by(common_name, water_year, s_date) |> 
+      summarize(cpue_abund = mean(count_100m),
+                cpue_bm_g = mean(biomass_100m),
+                cpue_bm_kg = cpue_bm_g/1000)
+
+mc_ts |> 
+ggplot(aes(x = s_date, y = cpue_abund, group = common_name, color = common_name)) +
+      geom_line() +  # Add line plot
+      labs(x = "Sample Date",
+           y = "CPUE (#/100 m)") +
+      theme_classic() +
+      scale_color_manual(values = c("Snook" = "darkblue", "Largemouth bass" = "darkgreen")) +
+      # scale_color_brewer(palette = "Set1") +  # This adds a nice set of colors, but you can choose any palette
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      scale_x_date(date_breaks = "1 year", date_labels = "%Y") + 
+      theme(panel.background = element_rect(fill = "white"),
+            axis.title = element_text(face = "bold", size = 12),
+            axis.line = element_line("black"),
+            axis.text = element_text(face = "bold", size = 12),
+            legend.title = element_blank(),
+            legend.text = element_text(face = "bold", size = 12),
+            legend.position = "bottom")
+      
+ggsave(
+      filename = "mc_abund_SSR2024.tiff",
+      path = "plots/",
+      width = 14, height = 10
+)
+
+mc_ts |> 
+      ggplot(aes(x = s_date, y = cpue_bm_kg, group = common_name, color = common_name)) +
+      geom_line() +  # Add line plot
+      labs(x = "Sample Date",
+           y = "CPUE (kg/100 m)") +
+      theme_classic() +
+      scale_color_manual(values = c("Snook" = "darkblue", "Largemouth bass" = "darkgreen")) +
+      # scale_color_brewer(palette = "Set1") +  # This adds a nice set of colors, but you can choose any palette
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      scale_x_date(date_breaks = "1 year", date_labels = "%Y") + 
+      theme(panel.background = element_rect(fill = "white"),
+            axis.title = element_text(face = "bold", size = 12),
+            axis.line = element_line("black"),
+            axis.text = element_text(face = "bold", size = 12),
+            legend.title = element_blank(),
+            legend.text = element_text(face = "bold", size = 12),
+            legend.position = "bottom")
+
+# ggsave(
+#       filename = "mc_bm_SSR2024.tiff",
+#       path = "plots/",
+#       width = 14, height = 10
+# )
+
+###########################################################################
+# task 10 prey-invasive cpue/biomass ts plots -----------------------------
+###########################################################################
+
+sf_ts <- dt |> 
+      filter(genus == "Lepomis") |> 
+      filter(site %in% c("RB8", "RB9", "RB10", "RB11", "RB13")) |> 
+      mutate(s_date = make_date(year = calendar_year, month = month, day = 1)) |> 
+      group_by(genus, water_year, s_date, site, bout) |> 
+      summarize(count = sum(catch_number, na.rm = TRUE),
+                count_m = count/distance,
+                count_100m = count_m*100,
+                biomass = sum(weight_g*catch_number),
+                biomass_m = biomass/distance,
+                biomass_100m = biomass_m*100) |> 
+      ungroup() |> 
+      group_by(genus, water_year, s_date) |> 
+      summarize(cpue_abund = mean(count_100m),
+                cpue_bm_g = mean(biomass_100m),
+                cpue_bm_kg = cpue_bm_g/1000) |> 
+      ungroup() |> 
+      mutate(prey = genus) |> 
+      select(-genus)
+
+inv_ts <- dt |> 
+      filter(status == "invasive") |> 
+      filter(site %in% c("RB8", "RB9", "RB10", "RB11", "RB13")) |> 
+      mutate(s_date = make_date(year = calendar_year, month = month, day = 1)) |> 
+      group_by(status, water_year, s_date, site, bout) |> 
+      summarize(count = sum(catch_number, na.rm = TRUE),
+                count_m = count/distance,
+                count_100m = count_m*100,
+                biomass = sum(weight_g*catch_number),
+                biomass_m = biomass/distance,
+                biomass_100m = biomass_m*100) |> 
+      ungroup() |> 
+      group_by(status, water_year, s_date) |> 
+      summarize(cpue_abund = mean(count_100m),
+                cpue_bm_g = mean(biomass_100m),
+                cpue_bm_kg = cpue_bm_g/1000) |> 
+      ungroup() |> 
+      mutate(prey = status) |> 
+      select(-status)
+
+glimpse(sf_ts)
+glimpse(inv_ts)
+sf_inv_ts <- rbind(sf_ts, inv_ts)
+glimpse(sf_inv_ts)
+
+sf_inv_ts |> 
+      ggplot(aes(x = s_date, y = cpue_abund, group = prey, color = prey)) +
+      geom_line() +  # Add line plot
+      labs(x = "Sample Date",
+           y = "CPUE (#/100 m)") +
+      theme_classic() +
+      scale_color_manual(values = c("Lepomis" = "darkgreen", "invasive" = "darkred")) +
+      # scale_color_brewer(palette = "Set1") +  # This adds a nice set of colors, but you can choose any palette
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      scale_x_date(date_breaks = "1 year", date_labels = "%Y") + 
+      theme(panel.background = element_rect(fill = "white"),
+            axis.title = element_text(face = "bold", size = 12),
+            axis.line = element_line("black"),
+            axis.text = element_text(face = "bold", size = 12),
+            legend.title = element_blank(),
+            legend.text = element_text(face = "bold", size = 12),
+            legend.position = "bottom")
+
+ggsave(
+      filename = "sf_inv_abund_SSR2024.tiff",
+      path = "plots/",
+      width = 14, height = 10
+)
+
+sf_inv_ts |> 
+      ggplot(aes(x = s_date, y = cpue_bm_g, group = prey, color = prey)) +
+      geom_line() +  # Add line plot
+      labs(x = "Sample Date",
+           y = "CPUE (g/100 m)") +
+      theme_classic() +
+      scale_color_manual(values = c("Lepomis" = "darkgreen", "invasive" = "darkred")) +      # scale_color_brewer(palette = "Set1") +  # This adds a nice set of colors, but you can choose any palette
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      scale_x_date(date_breaks = "1 year", date_labels = "%Y") + 
+      theme(panel.background = element_rect(fill = "white"),
+            axis.title = element_text(face = "bold", size = 12),
+            axis.line = element_line("black"),
+            axis.text = element_text(face = "bold", size = 12),
+            legend.title = element_blank(),
+            legend.text = element_text(face = "bold", size = 12),
+            legend.position = "bottom")
+
+ggsave(
+      filename = "sf_inv_bm_SSR2024.tiff",
+      path = "plots/",
+      width = 14, height = 10
+)
+
+############ same as above but log-transformed for visualizing ##################
+
+sf_inv_ts |> 
+      ggplot(aes(x = s_date, y = log1p(cpue_abund), group = prey, color = prey)) +
+      geom_line() +  # Add line plot
+      labs(x = "Sample Date",
+           y = "CPUE (#/100 m)") +
+      theme_classic() +
+      scale_color_manual(values = c("Lepomis" = "darkgreen", "invasive" = "darkred")) +
+      # scale_color_brewer(palette = "Set1") +  # This adds a nice set of colors, but you can choose any palette
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      scale_x_date(date_breaks = "1 year", date_labels = "%Y") + 
+      theme(panel.background = element_rect(fill = "white"),
+            axis.title = element_text(face = "bold", size = 12),
+            axis.line = element_line("black"),
+            axis.text = element_text(face = "bold", size = 12),
+            legend.title = element_blank(),
+            legend.text = element_text(face = "bold", size = 12),
+            legend.position = "bottom")
+
+ggsave(
+      filename = "LOG1P_sf_inv_abund_SSR2024.tiff",
+      path = "plots/",
+      width = 14, height = 10
+)
+
+sf_inv_ts |> 
+      ggplot(aes(x = s_date, y = log1p(cpue_bm_g), group = prey, color = prey)) +
+      geom_line() +  # Add line plot
+      labs(x = "Sample Date",
+           y = "CPUE (g/100 m)") +
+      theme_classic() +
+      scale_color_manual(values = c("Lepomis" = "darkgreen", "invasive" = "darkred")) +      # scale_color_brewer(palette = "Set1") +  # This adds a nice set of colors, but you can choose any palette
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      scale_x_date(date_breaks = "1 year", date_labels = "%Y") + 
+      theme(panel.background = element_rect(fill = "white"),
+            axis.title = element_text(face = "bold", size = 12),
+            axis.line = element_line("black"),
+            axis.text = element_text(face = "bold", size = 12),
+            legend.title = element_blank(),
+            legend.text = element_text(face = "bold", size = 12),
+            legend.position = "bottom")
+
+# ggsave(
+#       filename = "LOG1P_sf_inv_bm_SSR2024.tiff",
+#       path = "plots/",
+#       width = 14, height = 10
+# )
