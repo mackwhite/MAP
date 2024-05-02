@@ -384,11 +384,11 @@ ggplot(aes(x = s_date, y = cpue_abund, group = common_name, color = common_name)
             legend.text = element_text(face = "bold", size = 12),
             legend.position = "bottom")
       
-ggsave(
-      filename = "mc_abund_SSR2024.tiff",
-      path = "plots/",
-      width = 14, height = 10
-)
+# ggsave(
+#       filename = "mc_abund_SSR2024.tiff",
+#       path = "plots/",
+#       width = 14, height = 10
+# )
 
 mc_ts |> 
       ggplot(aes(x = s_date, y = cpue_bm_kg, group = common_name, color = common_name)) +
@@ -481,11 +481,11 @@ sf_inv_ts |>
             legend.text = element_text(face = "bold", size = 12),
             legend.position = "bottom")
 
-ggsave(
-      filename = "sf_inv_abund_SSR2024.tiff",
-      path = "plots/",
-      width = 14, height = 10
-)
+# ggsave(
+#       filename = "sf_inv_abund_SSR2024.tiff",
+#       path = "plots/",
+#       width = 14, height = 10
+# )
 
 sf_inv_ts |> 
       ggplot(aes(x = s_date, y = cpue_bm_g, group = prey, color = prey)) +
@@ -504,11 +504,11 @@ sf_inv_ts |>
             legend.text = element_text(face = "bold", size = 12),
             legend.position = "bottom")
 
-ggsave(
-      filename = "sf_inv_bm_SSR2024.tiff",
-      path = "plots/",
-      width = 14, height = 10
-)
+# ggsave(
+#       filename = "sf_inv_bm_SSR2024.tiff",
+#       path = "plots/",
+#       width = 14, height = 10
+# )
 
 ############ same as above but log-transformed for visualizing ##################
 
@@ -530,11 +530,11 @@ sf_inv_ts |>
             legend.text = element_text(face = "bold", size = 12),
             legend.position = "bottom")
 
-ggsave(
-      filename = "LOG1P_sf_inv_abund_SSR2024.tiff",
-      path = "plots/",
-      width = 14, height = 10
-)
+# ggsave(
+#       filename = "LOG1P_sf_inv_abund_SSR2024.tiff",
+#       path = "plots/",
+#       width = 14, height = 10
+# )
 
 sf_inv_ts |> 
       ggplot(aes(x = s_date, y = log1p(cpue_bm_g), group = prey, color = prey)) +
@@ -558,3 +558,16 @@ sf_inv_ts |>
 #       path = "plots/",
 #       width = 14, height = 10
 # )
+
+###########################################################################
+# task 11a: snook river km-metric relationships
+###########################################################################
+
+sites <- dt |> 
+      select(site) |> 
+      distinct()
+# writexl::write_xlsx(sites, "data/sites.xlsx")
+
+site_w_ds_distance <- read_csv("data/sites_with_coordinates_ds_distance.csv")
+dt_distance <- left_join(dt, site_w_ds_distance)
+
