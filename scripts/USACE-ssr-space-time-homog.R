@@ -225,7 +225,6 @@ ggplot(all_data, aes(x = month_chr, y = (mean_bm), color = group, group = group)
       # geom_line() +
       # geom_point() +
       # geom_errorbar(aes(ymin = mean_bm - se, ymax = mean_bm + se), width = 0.2) +
-      # geom_line(data = filter(all_data, group != "Baseline"), aes(color = group), size = 1.5) +
       # geom_point(data = filter(all_data, group != "Baseline"), aes(color = group)) +
       # geom_line(data = filter(all_data, group == "Baseline"), color = "black", size = 1.2) +
       geom_ribbon(data = filter(all_data, group == "Baseline"),aes(ymin = mean_bm - se, ymax = mean_bm + se, fill = group), color = "black", alpha = 0.5) +
