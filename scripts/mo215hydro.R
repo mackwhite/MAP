@@ -53,7 +53,7 @@ ggplot() +
             panel.grid.minor.x = element_blank(),
             axis.line = element_line(color = "black")) 
 # 
-# ggsave(filename = "plots/mo215_05232024_with2016.jpeg",
+# ggsave(filename = "plots/mo215_05302024_with2016.jpeg",
 #        plot = last_plot(),
 #        width = 10, height = 5,
 #        dpi = 300)
