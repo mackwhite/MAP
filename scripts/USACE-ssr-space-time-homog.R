@@ -46,12 +46,12 @@ data <- data |>
                            "wet", "dry", "dry")))
 
 ###########################################################################
-# snook homogenization figures --------------------------------------------
+# snook homoggenization figures --------------------------------------------
 ###########################################################################
 
 ### snook cpue
 
-snook_homo <- data |> 
+snook_homog <- data |> 
       filter(common_name == "Snook") |> 
       filter(site %in% c("RB8", "RB9", "RB10", "RB11", "RB13")) |> 
       group_by(common_name, water_year, month_chr, season, site, bout) |> 
@@ -71,14 +71,14 @@ snook_homo <- data |>
       mutate(mean_rp_biomass = mean(mean_wym_biomass),
              mean_rp_period_count = mean(mean_wym_count))
 
-# write_csv(snook_homo, "../../snook_test.csv")
+# write_csv(snook_homog, "../../snook_test.csv")
 
 months_to_include <- c("Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun")
 
-snook_homo_filter <- snook_homo |> 
+snook_homog_filter <- snook_homog |> 
       filter(month_chr %in% months_to_include)
 
-baseline_data <- snook_homo_filter %>% 
+baseline_data <- snook_homog_filter %>% 
       filter(period == "baseline") %>%
       group_by(month_chr) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -86,7 +86,7 @@ baseline_data <- snook_homo_filter %>%
       mutate(water_year = "2005-2017")
 
 # Calculate statistics for individual years 2018 to 2024
-reporting_data <- snook_homo_filter %>%
+reporting_data <- snook_homog_filter %>%
       filter(period == 'reporting') %>%
       group_by(water_year, month_chr) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -135,7 +135,7 @@ ggplot(all_data, aes(x = month_chr, y = (mean_bm), color = group, group = group)
 
 
 ### Snook Distance
-snook_homo <- data |> 
+snook_homog <- data |> 
       filter(common_name == "Snook") |> 
       filter(site %in% c("RB8", "RB9", "RB10", "RB11", "RB13")) |> 
       group_by(common_name, water_year, month_chr, season, site, bout) |> 
@@ -157,14 +157,14 @@ snook_homo <- data |>
              mean_rp_period_count = mean(mean_wym_count),
              distance = distance)
 
-# write_csv(snook_homo, "../../snook_test.csv")
+# write_csv(snook_homog, "../../snook_test.csv")
 
 months_to_include <- c("Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun")
 
-snook_homo_filter <- snook_homo |> 
+snook_homog_filter <- snook_homog |> 
       filter(month_chr %in% months_to_include)
 
-baseline_data <- snook_homo_filter %>% 
+baseline_data <- snook_homog_filter %>% 
       filter(period == "baseline") %>%
       group_by(distance) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -172,7 +172,7 @@ baseline_data <- snook_homo_filter %>%
       mutate(water_year = "2005-2017")
 
 # Calculate statistics for individual years 2018 to 2024
-reporting_data <- snook_homo_filter %>%
+reporting_data <- snook_homog_filter %>%
       filter(period == 'reporting') %>%
       group_by(water_year, distance) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -220,12 +220,12 @@ ggplot(all_data, aes(x = distance, y = (mean_bm), color = group, group = group))
 # )
 
 ###########################################################################
-# bass homogenization figures --------------------------------------------
+# bass homoggenization figures --------------------------------------------
 ###########################################################################
 
 ### bass cpue
 
-bass_homo <- data |> 
+bass_homog <- data |> 
       filter(common_name == "Largemouth bass") |> 
       filter(site %in% c("RB8", "RB9", "RB10", "RB11", "RB13")) |> 
       group_by(common_name, water_year, month_chr, season, site, bout) |> 
@@ -245,14 +245,14 @@ bass_homo <- data |>
       mutate(mean_rp_biomass = mean(mean_wym_biomass),
              mean_rp_period_count = mean(mean_wym_count))
 
-# write_csv(bass_homo, "../../bass_test.csv")
+# write_csv(bass_homog, "../../bass_test.csv")
 
 months_to_include <- c("Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun")
 
-bass_homo_filter <- bass_homo |> 
+bass_homog_filter <- bass_homog |> 
       filter(month_chr %in% months_to_include)
 
-baseline_data <- bass_homo_filter %>% 
+baseline_data <- bass_homog_filter %>% 
       filter(period == "baseline") %>%
       group_by(month_chr) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -260,7 +260,7 @@ baseline_data <- bass_homo_filter %>%
       mutate(water_year = "2005-2017")
 
 # Calculate statistics for individual years 2018 to 2024
-reporting_data <- bass_homo_filter %>%
+reporting_data <- bass_homog_filter %>%
       filter(period == 'reporting') %>%
       group_by(water_year, month_chr) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -309,7 +309,7 @@ ggplot(all_data, aes(x = month_chr, y = (mean_bm), color = group, group = group)
 
 
 ### bass Distance
-bass_homo <- data |> 
+bass_homog <- data |> 
       filter(common_name == "Largemouth bass") |> 
       filter(site %in% c("RB8", "RB9", "RB10", "RB11", "RB13")) |> 
       group_by(common_name, water_year, month_chr, season, site, bout) |> 
@@ -331,14 +331,14 @@ bass_homo <- data |>
              mean_rp_period_count = mean(mean_wym_count),
              distance = distance)
 
-# write_csv(bass_homo, "../../bass_test.csv")
+# write_csv(bass_homog, "../../bass_test.csv")
 
 months_to_include <- c("Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun")
 
-bass_homo_filter <- bass_homo |> 
+bass_homog_filter <- bass_homog |> 
       filter(month_chr %in% months_to_include)
 
-baseline_data <- bass_homo_filter %>% 
+baseline_data <- bass_homog_filter %>% 
       filter(period == "baseline") %>%
       group_by(distance) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -346,7 +346,7 @@ baseline_data <- bass_homo_filter %>%
       mutate(water_year = "2005-2017")
 
 # Calculate statistics for individual years 2018 to 2024
-reporting_data <- bass_homo_filter %>%
+reporting_data <- bass_homog_filter %>%
       filter(period == 'reporting') %>%
       group_by(water_year, distance) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -394,12 +394,12 @@ ggplot(all_data, aes(x = distance, y = (mean_bm), color = group, group = group))
 # )
 
 ###########################################################################
-# sunfish homogenization figures --------------------------------------------
+# sunfish homoggenization figures --------------------------------------------
 ###########################################################################
 
 ### sunfish cpue
 
-sunfish_homo <- data |> 
+sunfish_homog <- data |> 
       filter(genus == "Lepomis") |> 
       filter(site %in% c("RB8", "RB9", "RB10", "RB11", "RB13")) |> 
       group_by(genus, water_year, month_chr, season, site, bout) |> 
@@ -419,14 +419,14 @@ sunfish_homo <- data |>
       mutate(mean_rp_biomass = mean(mean_wym_biomass),
              mean_rp_period_count = mean(mean_wym_count))
 
-# write_csv(sunfish_homo, "../../sunfish_test.csv")
+# write_csv(sunfish_homog, "../../sunfish_test.csv")
 
 months_to_include <- c("Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun")
 
-sunfish_homo_filter <- sunfish_homo |> 
+sunfish_homog_filter <- sunfish_homog |> 
       filter(month_chr %in% months_to_include)
 
-baseline_data <- sunfish_homo_filter %>% 
+baseline_data <- sunfish_homog_filter %>% 
       filter(period == "baseline") %>%
       group_by(month_chr) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -434,7 +434,7 @@ baseline_data <- sunfish_homo_filter %>%
       mutate(water_year = "2005-2017")
 
 # Calculate statistics for individual years 2018 to 2024
-reporting_data <- sunfish_homo_filter %>%
+reporting_data <- sunfish_homog_filter %>%
       filter(period == 'reporting') %>%
       group_by(water_year, month_chr) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -483,7 +483,7 @@ ggplot(all_data, aes(x = month_chr, y = (mean_bm), color = group, group = group)
 
 
 ### sunfish Distance
-sunfish_homo <- data |> 
+sunfish_homog <- data |> 
       filter(genus == "Lepomis") |> 
       filter(site %in% c("RB8", "RB9", "RB10", "RB11", "RB13")) |> 
       group_by(genus, water_year, month_chr, season, site, bout) |> 
@@ -505,14 +505,14 @@ sunfish_homo <- data |>
              mean_rp_period_count = mean(mean_wym_count),
              distance = distance)
 
-# write_csv(sunfish_homo, "../../sunfish_test.csv")
+# write_csv(sunfish_homog, "../../sunfish_test.csv")
 
 months_to_include <- c("Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun")
 
-sunfish_homo_filter <- sunfish_homo |> 
+sunfish_homog_filter <- sunfish_homog |> 
       filter(month_chr %in% months_to_include)
 
-baseline_data <- sunfish_homo_filter %>% 
+baseline_data <- sunfish_homog_filter %>% 
       filter(period == "baseline") %>%
       group_by(distance) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -520,7 +520,7 @@ baseline_data <- sunfish_homo_filter %>%
       mutate(water_year = "2005-2017")
 
 # Calculate statistics for individual years 2018 to 2024
-reporting_data <- sunfish_homo_filter %>%
+reporting_data <- sunfish_homog_filter %>%
       filter(period == 'reporting') %>%
       group_by(water_year, distance) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -568,12 +568,12 @@ ggplot(all_data, aes(x = distance, y = (mean_bm), color = group, group = group))
 # )
 
 ###########################################################################
-# nonnative homogenization figures --------------------------------------------
+# nonnative homoggenization figures --------------------------------------------
 ###########################################################################
 
 ### nonnative cpue
 
-nonnative_homo <- data |> 
+nonnative_homog <- data |> 
       filter(status == "invasive") |> 
       filter(site %in% c("RB8", "RB9", "RB10", "RB11", "RB13")) |> 
       group_by(status, water_year, month_chr, season, site, bout) |> 
@@ -593,14 +593,14 @@ nonnative_homo <- data |>
       mutate(mean_rp_biomass = mean(mean_wym_biomass),
              mean_rp_period_count = mean(mean_wym_count))
 
-# write_csv(nonnative_homo, "../../nonnative_test.csv")
+# write_csv(nonnative_homog, "../../nonnative_test.csv")
 
 months_to_include <- c("Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun")
 
-nonnative_homo_filter <- nonnative_homo |> 
+nonnative_homog_filter <- nonnative_homog |> 
       filter(month_chr %in% months_to_include)
 
-baseline_data <- nonnative_homo_filter %>% 
+baseline_data <- nonnative_homog_filter %>% 
       filter(period == "baseline") %>%
       group_by(month_chr) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -608,7 +608,7 @@ baseline_data <- nonnative_homo_filter %>%
       mutate(water_year = "2005-2017")
 
 # Calculate statistics for individual years 2018 to 2024
-reporting_data <- nonnative_homo_filter %>%
+reporting_data <- nonnative_homog_filter %>%
       filter(period == 'reporting') %>%
       group_by(water_year, month_chr) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -657,7 +657,7 @@ ggplot(all_data, aes(x = month_chr, y = (mean_bm), color = group, group = group)
 
 
 ### nonnative Distance
-nonnative_homo <- data |> 
+nonnative_homog <- data |> 
       filter(status == "invasive") |> 
       filter(site %in% c("RB8", "RB9", "RB10", "RB11", "RB13")) |> 
       group_by(status, water_year, month_chr, season, site, bout) |> 
@@ -679,14 +679,14 @@ nonnative_homo <- data |>
              mean_rp_period_count = mean(mean_wym_count),
              distance = distance)
 
-# write_csv(nonnative_homo, "../../nonnative_test.csv")
+# write_csv(nonnative_homog, "../../nonnative_test.csv")
 
 months_to_include <- c("Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun")
 
-nonnative_homo_filter <- nonnative_homo |> 
+nonnative_homog_filter <- nonnative_homog |> 
       filter(month_chr %in% months_to_include)
 
-baseline_data <- nonnative_homo_filter %>% 
+baseline_data <- nonnative_homog_filter %>% 
       filter(period == "baseline") %>%
       group_by(distance) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -694,7 +694,7 @@ baseline_data <- nonnative_homo_filter %>%
       mutate(water_year = "2005-2017")
 
 # Calculate statistics for individual years 2018 to 2024
-reporting_data <- nonnative_homo_filter %>%
+reporting_data <- nonnative_homog_filter %>%
       filter(period == 'reporting') %>%
       group_by(water_year, distance) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
