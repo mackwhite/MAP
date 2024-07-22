@@ -586,7 +586,7 @@ nonnative_homog <- data |>
       ungroup() |> 
       mutate(period = if_else(water_year >= 2018, "reporting", "baseline")) |> 
       group_by(status, period, water_year, month_chr, season, site) |> 
-      summarize(mean_wym_biomass = mean(biomass_100m),
+      summarize(mean_wym_biomass = mean(biomass_100m/1000),
                 mean_wym_count = mean(count_100m)) |> 
       ungroup() |> 
       group_by(period) |> 
@@ -671,7 +671,7 @@ nonnative_homog <- data |>
       ungroup() |> 
       mutate(period = if_else(water_year >= 2018, "reporting", "baseline")) |> 
       group_by(status, period, water_year, month_chr, season, site, distance) |> 
-      summarize(mean_wym_biomass = mean(biomass_100m),
+      summarize(mean_wym_biomass = mean(biomass_100m/1000),
                 mean_wym_count = mean(count_100m)) |> 
       ungroup() |> 
       group_by(period) |> 

@@ -3,7 +3,7 @@
 # then, just search and replace for each species/taxon group
 
 
-baseline_data1 <- snook_homog_filter %>% 
+baseline_data1 <- nonnative_homog_filter %>% 
       filter(period == "baseline") %>%
       group_by(distance) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -11,14 +11,14 @@ baseline_data1 <- snook_homog_filter %>%
       mutate(water_year = "2005-2017")
 
 # Calculate statistics for individual years 2018 to 2024
-reporting_data1 <- snook_homog_filter %>% 
+reporting_data1 <- nonnative_homog_filter %>% 
       filter(period == "reporting") %>%
       group_by(distance) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
                 se = sd(mean_wym_biomass, na.rm = TRUE) / sqrt(n())) |> 
       mutate(water_year = "2018-2024")
 
-current_data1 <- snook_homog_filter %>%
+current_data1 <- nonnative_homog_filter %>%
       filter(water_year == 2024) %>%
       group_by(water_year, distance) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -57,14 +57,14 @@ ggplot(all_data1, aes(x = distance, y = mean_bm, color = group, group = group)) 
             panel.grid.minor.x = element_blank(),
             axis.line = element_line(color = "black"))
 ggsave(
-      filename = "snook-distance.tiff",
+      filename = "nonnative-distance.tiff",
       path = "plots/ssr2024_revisions/",
       width = 10, height = 10
 )
 
 # mean monthly biomass ----------------------------------------------------
 
-baseline_data2 <- snook_homog_filter %>% 
+baseline_data2 <- nonnative_homog_filter %>% 
       filter(period == "baseline") %>%
       group_by(month_chr) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -72,7 +72,7 @@ baseline_data2 <- snook_homog_filter %>%
       mutate(water_year = "2005-2017")
 
 # Calculate statistics for individual years 2018 to 2024
-reporting_data2 <- snook_homog_filter %>% 
+reporting_data2 <- nonnative_homog_filter %>% 
       filter(period == "reporting") %>%
       group_by(month_chr) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -80,7 +80,7 @@ reporting_data2 <- snook_homog_filter %>%
       mutate(water_year = "2018-2024")
 
 # Calculate statistics for water year 2024
-current_data2 <- snook_homog_filter %>%
+current_data2 <- nonnative_homog_filter %>%
       filter(water_year == 2024) %>%
       group_by(water_year, month_chr) %>%
       summarise(mean_bm = mean(mean_wym_biomass, na.rm = TRUE),
@@ -123,7 +123,7 @@ ggplot(all_data2, aes(x = month_chr, y = mean_bm, color = group, group = group))
             axis.line = element_line(color = "black"))
 
 ggsave(
-      filename = "snook-month.tiff",
+      filename = "nonnative-month.tiff",
       path = "plots/ssr2024_revisions/",
       width = 10, height = 10
 )
