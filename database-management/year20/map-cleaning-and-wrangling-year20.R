@@ -10,10 +10,9 @@ librarian::shelf(tidyverse, readr, writexl, scales, ggplot2)
 
 # step zero: read in appended dataset -------------------------------------
 
-step0_dat <- read_csv("data/map_years1thru20_April.csv") |> 
+step0_dat <- readxl::read_xlsx("data/electrofishing/year20/map_years1thru20.xlsx") |> 
       ### generate full_site column for zero-filling and "true" site identification
       mutate(full_site = paste(drainage, site, sep = ""))
-glimpse(step0_dat)
 
 # step one: filter out sites that are not real ----------------------------
 
@@ -282,7 +281,6 @@ print(na_count_per_column) #no more NAs
 
 step_2_sl_join3 <- rbind(step_2_sl_NO_NFC_FINAL_NA_FILL, step_2_sl_NFC_preserved)
 
-
 # prepare data and join sl and tl data ------------------------------------
 
 ### total length dataset
@@ -304,6 +302,26 @@ print(na_count_per_column) #NA fixed for SL and weight_g (minus "No fishes colle
 glimpse(step_2_sl_final)
 
 ### join the two datasets
-map_all_thru_042024 <- rbind(step_2_sl_final, step_2_tl_final)
-# writexl::write_xlsx(map_all_thru_042024, "data/map_all_thru_042024.xlsx")
-# write_csv(map_all_thru_042024, "data/map_all_thru_042024.csv")
+map_all_thru_year20 <- rbind(step_2_sl_final, step_2_tl_final) |> 
+      filter(!full_site %in% c("RBOTHER", "RBCANEPATCH"))
+
+unique(map_all_thru_year20$full_site)
+
+site_coords_dist <- read_csv('data/for-joins/sites_with_coordinates_ds_distance-forjoins.csv') |> 
+      rename(full_site = site)
+
+dat_final <- left_join(map_all_thru_year20, site_coords_dist, by = "full_site")
+
+na_count_per_column <- sapply(dat_final, function(x) sum(is.na(x)))
+print(na_count_per_column) #NA fixed for SL and weight_g (minus "No fishes collected"; 70 instances)
+
+weight_test <- dat_final |> filter(is.na(weight_g))
+tl_test <- dat_final |> filter(is.na(tl))
+sl_test <- dat_final |> filter(is.na(sl))
+catch_number_test <- dat_final |> filter(is.na(catchnumber))
+test <- map_all_thru_year20 |> filter(common_name == "No fishes collected")
+
+writexl::write_xlsx(map_all_thru_042024, "data/electrofishing/year20/map_all_thru_year20.xlsx")
+write_csv(map_all_thru_042024, "data/map_all_thru_year20.csv")
+
+
