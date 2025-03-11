@@ -10,7 +10,9 @@ librarian::shelf(tidyverse, readr, writexl, scales, ggplot2)
 
 # step zero: read in appended dataset -------------------------------------
 
-step0_dat <- readxl::read_xlsx("data/electrofishing/year20/map_years1thru20.xlsx") |> 
+step0_dat <- readxl::read_xlsx("data/electrofishing/year20/map_years1thru20_master.xlsx", 
+                               sheet = "map_years1thru20") |> 
+      janitor::clean_names() |> 
       ### generate full_site column for zero-filling and "true" site identification
       mutate(full_site = paste(drainage, site, sep = ""))
 
@@ -23,7 +25,12 @@ step1_dat <- step0_dat |>
 
 ### step 2a: separate data in to species we take TL and SL measurements for
 
-dt_tl <- step1_dat |> 
+spp_joins <- read_csv("data/for-joins/map_species_code_table.csv")
+
+step1_dat1 <- step1_dat |> 
+      left_join(spp_joins)
+
+dt_tl <- step1_dat1 |> 
       ### select species we take total length measurements for, not SL
       filter(common_name %in% c("Florida gar", "American eel", "Bowfin",
                                 "Asian Swamp Eel", "Peacock eel")) |> 
@@ -37,7 +44,7 @@ dt_tl <- step1_dat |>
 na_count_per_column <- sapply(dt_tl, function(x) sum(is.na(x)))
 print(na_count_per_column)
 
-dt_sl <- step1_dat |> 
+dt_sl <- step1_dat1 |> 
       ### select species we take total length measurements for, not SL
       filter(!common_name %in% c("Florida gar", "American eel", "Bowfin",
                                 "Asian Swamp Eel", "Peacock eel")) |> 
@@ -303,7 +310,8 @@ glimpse(step_2_sl_final)
 
 ### join the two datasets
 map_all_thru_year20 <- rbind(step_2_sl_final, step_2_tl_final) |> 
-      filter(!full_site %in% c("RBOTHER", "RBCANEPATCH"))
+      filter(!full_site %in% c("RBOTHER", "RBCANEPATCH")) |> 
+      select(-weight_kg)
 
 unique(map_all_thru_year20$full_site)
 
@@ -321,7 +329,7 @@ sl_test <- dat_final |> filter(is.na(sl))
 catch_number_test <- dat_final |> filter(is.na(catchnumber))
 test <- map_all_thru_year20 |> filter(common_name == "No fishes collected")
 
-writexl::write_xlsx(map_all_thru_042024, "data/electrofishing/year20/map_all_thru_year20.xlsx")
-write_csv(map_all_thru_042024, "data/map_all_thru_year20.csv")
+writexl::write_xlsx(map_all_thru_year20, "data/electrofishing/year20/map_years1thru20_clean.xlsx")
+write_csv(map_all_thru_year20, "data/map_years1thru20_clean.csv")
 
 

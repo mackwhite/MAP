@@ -10,7 +10,7 @@ librarian::shelf(tidyverse, readr, writexl, scales, ggplot2)
 
 # read in QAQC'ed data ----------------------------------------------------
 
-dat <- read_csv("data/map_all_thru_042024.csv") |> 
+dat <- read_csv("data/map_years1thru20_clean.csv") |> 
       rename(hydrologic_year = hydroyear,
              project_year = year,
              site = full_site,
@@ -97,4 +97,9 @@ zero_arranged <- zero |>
              stomach_contents)
 
 zero_arranged_all <- rbind(zero_arranged, dat_NFC)
-# write_csv(zero_arranged_all, "data/map_thru_042024_zerofilled.csv")
+
+### clean environment ---
+keep <- c("zero_arranged_all")
+rm(list = setdiff(ls(), keep))
+
+write_csv(zero_arranged_all, "data/map_years1thru20_clean_zerofilled.csv")
