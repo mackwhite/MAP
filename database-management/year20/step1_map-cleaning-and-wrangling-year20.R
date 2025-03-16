@@ -16,6 +16,8 @@ step0_dat <- readxl::read_xlsx("data/electrofishing/year20/map_years1thru20_mast
       ### generate full_site column for zero-filling and "true" site identification
       mutate(full_site = paste(drainage, site, sep = ""))
 
+test <- step0_dat |> filter(hydroyear == "2023-2024")
+
 # step one: filter out sites that are not real ----------------------------
 
 step1_dat <- step0_dat |> 
@@ -305,7 +307,6 @@ step_2_sl_final <- step_2_sl_join3 |>
 
 na_count_per_column <- sapply(step_2_sl_final, function(x) sum(is.na(x)))
 print(na_count_per_column) #NA fixed for SL and weight_g (minus "No fishes collected"; 70 instances)
-
 glimpse(step_2_sl_final)
 
 ### join the two datasets

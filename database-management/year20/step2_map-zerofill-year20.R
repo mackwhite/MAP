@@ -21,7 +21,7 @@ dat <- read_csv("data/map_years1thru20_clean.csv") |>
              total_length = tl,
              standard_length = sl,
              stomach_contents = stomachcontent) |> 
-      mutate(date = mdy(date),
+      mutate(date_test = mdy(date),
              calendar_year = year(date),
              month = month(date),
              day = day(date)) |> 
@@ -34,6 +34,11 @@ dat <- read_csv("data/map_years1thru20_clean.csv") |>
              stomach_contents)
       
 glimpse(dat)
+
+na_count_per_column <- sapply(dat, function(x) sum(is.na(x)))
+print(na_count_per_column)
+
+test <- dat |> filter(is.na(calendar_year))
 
 # preserve "No fishes collected" before NA fill ---------------------------
 ### ensures we are not creating unreal zeros for sites where fish were indeed collected
