@@ -19,22 +19,45 @@ data1 <- data |>
 data2 <- data1 |> 
       mutate(hydro_year = if_else(month >= 5, year + 1, year))
 
-
 # calculate mean and SE for the entire dataset ----------------------------
 mean_se_data <- data2 |> 
       group_by(day_of_year) |> 
-      filter(hydro_year %in% c(1994:2025)) |> 
+      filter(year %in% c(1994:2025)) |> 
       summarise(mean_stage = mean(`Stage (cm)`),
                 se = sd(`Stage (cm)`) / sqrt(n()))
 
 # filter data for specific years for plotting -----------------------------
 filtered_data <- data2 |> 
-      filter(hydro_year %in% c(2015, 2018, 2021, 2024))
+      filter(year %in% c(2015, 2017, 2019, 2021, 2024, 2025))
+
+### projecting for jenn to determine month of late dry sampling ---
+filtered_data2 <- data2 |> 
+      filter(year == 2025) |> 
+      arrange(Date) |> 
+      mutate(daily_change = `Stage (cm)` - lag(`Stage (cm)`)) |> 
+      filter(!is.na(daily_change))
+
+last_date <- "2025-03-23"
+last_stage <- 36.2712
+avg_daily_change <- mean(filtered_data2$daily_change)
+n_days = 90
+future_dates <- seq.Date(as.Date(last_date) + 1, by = "day", length.out = n_days)
+projected_stage <- last_stage + (1:n_days) * avg_daily_change
+projection_df <- data.frame(
+      date = future_dates,
+      Stage_cm = projected_stage
+) |> 
+      mutate(date = as.Date(date),
+             year = year(date),
+             month = month(date),
+             day_of_year = yday(date))
 
 year_palette <- c("2015" = "#D8E8F8",
-                  "2018" = "#A4C9E9",
+                  "2017" = "lightblue",
+                  "2019" = "#A4C9E9",
                   "2021" = "#5A94CF",
-                  "2024" = "#1248A3")
+                  "2024" = "#1248A3",
+                  "2025" = "darkblue")
 
 # generate breaks + labels for plotting -----------------------------------
 breaks <- yday(as.Date(paste0("2023-", 1:12, "-01")))
@@ -43,17 +66,22 @@ labels <- month.name[1:12]
 # generate plot -----------------------------------------------------------
 ggplot() +
       geom_line(data = filtered_data, 
-                aes(x = day_of_year, y = `Stage (cm)`, color = as.factor(hydro_year)), size = 1) +
+                aes(x = day_of_year, y = `Stage (cm)`, color = as.factor(year)), size = 1) +
+      geom_line(data = projection_df,
+                aes(x = day_of_year, y = Stage_cm), color = "red", size = 1, linetype = "dotted") +
       geom_line(data = mean_se_data, 
                 aes(x = day_of_year, y = mean_stage), size = 1.5, color = "black") +
       geom_ribbon(data = mean_se_data, 
                   aes(x = day_of_year, ymin = mean_stage - se, ymax = mean_stage + se), fill = "#6E6E6E", alpha = 0.2) +
       scale_x_continuous(breaks = breaks, labels = labels) +
-      scale_color_manual(values = year_palette)+
+      scale_y_continuous(breaks = c(0,10,20,30,40,50,60,70,80,90,100)) +
+      geom_hline(yintercept = 30, color = "black", size = 1) +
+      geom_hline(yintercept = 10, color = "black", size = 1) +
+      scale_color_manual(values = year_palette) +
       labs(title = "Daily MO-215 Water Levels w/ Mean + Standard Error (1994-Present)",
            x = "Month",
            y = "Stage (cm)",
-           color = "Hydrologic Year") +
+           color = "Calendar Year") +
       theme_minimal() + 
       theme(plot.title = element_text(hjust = 0.5, face = "bold"),
             axis.title = element_text(hjust = 0.5, face = "bold"),
@@ -66,8 +94,8 @@ ggplot() +
             panel.grid.minor.x = element_blank(),
             axis.line = element_line(color = "black")) 
 
-ggsave(filename = "plots/hydro/mo215_longterm_average_plus_wet_dry_years_and_2024.jpeg",
+ggsave(filename = "plots/hydro/mo215_longterm_average_plus_projection_spring2025.png",
        plot = last_plot(),
        width = 10, height = 5,
-       dpi = 300)
+       dpi = 600)
 
