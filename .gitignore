@@ -15,6 +15,8 @@
 # Tiff Files
 *.tiff
 *.tif
+*.png
+*.jpeg
 
 # Session Data files
 .RData
