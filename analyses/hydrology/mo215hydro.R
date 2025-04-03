@@ -24,7 +24,29 @@ mean_se_data <- data2 |>
       group_by(day_of_year) |> 
       filter(year %in% c(1994:2025)) |> 
       summarise(mean_stage = mean(`Stage (cm)`),
-                se = sd(`Stage (cm)`) / sqrt(n()))
+                se = sd(`Stage (cm)`) / sqrt(n())) |> 
+      mutate(period = "POR")
+
+mean_se_datapre <- data2 |> 
+      group_by(day_of_year) |> 
+      filter(year %in% c(2012:2019)) |> 
+      summarise(mean_stage = mean(`Stage (cm)`),
+                se = sd(`Stage (cm)`) / sqrt(n())) |> 
+      mutate(period = "2012-2019")
+
+mean_se_datapost <- data2 |> 
+      group_by(day_of_year) |> 
+      filter(year %in% c(2020:2025)) |> 
+      summarise(mean_stage = mean(`Stage (cm)`),
+                se = sd(`Stage (cm)`) / sqrt(n())) |> 
+      mutate(period = "2020-2025")
+
+mean_se_early <- data2 |> 
+      group_by(day_of_year) |> 
+      filter(year %in% c(1994:2011)) |> 
+      summarise(mean_stage = mean(`Stage (cm)`),
+                se = sd(`Stage (cm)`) / sqrt(n())) |> 
+      mutate(period = "1994-2011")
 
 # filter data for specific years for plotting -----------------------------
 filtered_data <- data2 |> 
@@ -113,3 +135,51 @@ ggsave(filename = "plots/hydro/mo215_usace_2025_q1_report.png",
        width = 10, height = 5,
        dpi = 600)
 
+
+# generate mean, pre2020, and post2020 figure -----------------------------
+
+period_palette <- c("1994-2011" = "#7c5295",
+                    "2012-2019" = "#01796F",
+                    "2020-2025" = "#005b96")
+ggplot() +
+      geom_line(data = mean_se_early,
+                aes(x = day_of_year, y = mean_stage, color = period), size = 1.5) +
+      geom_ribbon(data = mean_se_early,
+                  aes(x = day_of_year, ymin = mean_stage - se, ymax = mean_stage + se, fill = period), alpha = 0.3) +
+      geom_line(data = mean_se_datapre,
+                aes(x = day_of_year, y = mean_stage, color = period), size = 1.5) +
+      geom_ribbon(data = mean_se_datapre,
+                  aes(x = day_of_year, ymin = mean_stage - se, ymax = mean_stage + se, fill = period), alpha = 0.3) +
+      geom_line(data = mean_se_datapost, 
+                aes(x = day_of_year, y = mean_stage, color = period), size = 1.5) +
+      geom_ribbon(data = mean_se_datapost, 
+                  aes(x = day_of_year, ymin = mean_stage - se, ymax = mean_stage + se, fill = period), alpha = 0.3) +
+      scale_x_continuous(breaks = breaks, labels = labels) +
+      scale_y_continuous(breaks = c(0,10,20,30,40,50,60,70,80,90,100)) +
+      # geom_hline(yintercept = 30, color = "black", size = 1) +
+      geom_hline(yintercept = 15.1, color = "black", size = 1.5, linetype = 3) +
+      scale_color_manual(values = period_palette) +
+      scale_fill_manual(values = period_palette) +
+      labs(x = "Month",
+           y = "Marsh Stage (cm)",
+           color = "Years",
+           fill = "Years") +
+      theme_minimal() + 
+      theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+            axis.title = element_text(hjust = 0.5, face = "bold", color = "black"),
+            axis.text = element_text(hjust = 0.5, face = "bold", color = "black"),
+            legend.text = element_text(hjust = 0.5, face = "bold", color = "black"),
+            legend.title = element_text(hjust = 0.5, face = "bold", color = "black"),
+            legend.position = c(0.80,0.15),
+            plot.background = element_rect(fill = "white"),
+            legend.background = element_rect(fill = "white", colour = "black"),
+            panel.grid.minor.y = element_blank(),
+            panel.grid.minor.x = element_blank(),
+            panel.grid.major.y = element_blank(),
+            panel.grid.major.x = element_blank(),
+            axis.line = element_line(color = "black")) 
+
+ggsave(filename = "plots/hydro/mo215_hydro_pre_post_2020.png",
+       plot = last_plot(),
+       width = 10, height = 5,
+       dpi = 600)
