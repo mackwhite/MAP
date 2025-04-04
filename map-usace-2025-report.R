@@ -30,12 +30,13 @@ dat <- read_csv("data/electrofishing/year20/map_years1thru20_clean_zerofilled.cs
 
 ### left join with updated water year
 water_year_ssr <- read_csv("data/hydrologic_year.csv")
-dt <- left_join(dat, water_year_ssr, by = "hydrologic_year")
-glimpse(dt)
+dt0 <- left_join(dat, water_year_ssr, by = "hydrologic_year")
+glimpse(dt0)
 
-dt <- dt |> 
+dt <- dt0 |> 
       select(-hydrologic_year) |> 
       rename(water_year = water_year_ssr) |> 
+      ### fix some of the wonky stuff the period of record cleaning didn't catch
       mutate(weight_g = case_when(
             common_name == "Snook" & weight_g >= 64000.000 ~ 6410.000,
             genus == "Lepomis" & weight_g >= 599 ~ 3.6,
@@ -355,11 +356,12 @@ writexl::write_xlsx(ssr_richness, "data/mapannualreport2025_richness.xlsx")
 # task 9 mesoconsumer cpue/biomass ts plots -------------------------------
 ###########################################################################
 
+### generate cpue estimates ----
 mc_ts <- dt |> 
       filter(common_name %in% c("Snook", "Largemouth bass")) |> 
       filter(site %in% c("RB8", "RB9", "RB10", "RB11", "RB13")) |> 
       mutate(s_date = make_date(year = calendar_year, month = month, day = 1)) |> 
-      group_by(common_name, water_year, s_date, site, bout) |> 
+      group_by(common_name, calendar_year, month, site, bout) |> 
       summarize(count = sum(catch_number, na.rm = TRUE),
                 count_m = count/distance,
                 count_100m = count_m*100,
@@ -367,68 +369,139 @@ mc_ts <- dt |>
                 biomass_m = biomass/distance,
                 biomass_100m = biomass_m*100) |> 
       ungroup() |> 
-      group_by(common_name, water_year, s_date) |> 
+      group_by(common_name, calendar_year, month, site) |> 
       summarize(cpue_abund = mean(count_100m),
                 cpue_bm_g = mean(biomass_100m),
-                cpue_bm_kg = cpue_bm_g/1000)
+                cpue_bm_kg = cpue_bm_g/1000) |> 
+      ungroup() |> 
+      group_by(common_name, calendar_year, month) |> 
+      summarize(cpue_abund = mean(cpue_abund),
+                cpue_bm_g = mean(cpue_bm_g),
+                cpue_bm_kg = mean(cpue_bm_kg)) |> 
+      ungroup()
 
+### plot cpue for abundance ----
 mc_ts |> 
-      ggplot(aes(x = s_date, y = cpue_abund, group = common_name, color = common_name)) +
-      geom_line() +  # Add line plot
-      labs(x = "Sample Date",
-           y = "CPUE (#/100 m)") +
+      mutate(s_date = make_date(year = calendar_year, month = month, day = 1)) |> 
+      filter(common_name == "Snook") |> 
+      ggplot(aes(x = s_date, y = cpue_abund, 
+                 group = common_name, color = common_name)) +
+      geom_line(size = 1.3) +  # Add line plot
+      labs(x = "Year-Month",
+           y = "Snook Mean Monthly CPUE (#/100 m)") +
       theme_classic() +
-      scale_color_manual(values = c("Snook" = "darkblue", "Largemouth bass" = "darkgreen")) +
-      # scale_color_brewer(palette = "Set1") +  # This adds a nice set of colors, but you can choose any palette
+      scale_y_continuous(breaks = c(0,5,10,15,20,25,30), limits = c(0,30)) +
+      scale_color_manual(values = c("Snook" = "#003153", "Largemouth bass" = "#49796B")) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
       scale_x_date(date_breaks = "1 year", date_labels = "%Y") + 
-      theme(panel.background = element_rect(fill = "white"),
-            axis.title = element_text(face = "bold", size = 12),
-            axis.line = element_line("black"),
-            axis.text = element_text(face = "bold", size = 12),
-            legend.title = element_blank(),
-            legend.text = element_text(face = "bold", size = 12),
-            legend.position = "bottom")
+      theme(axis.text = element_text(size = 8, face = "bold", colour = "black"),
+            axis.title = element_text(size = 10, face = "bold", colour = "black"),
+            plot.title = element_text(size = 10, face = "bold", colour = "black"),
+            panel.grid.major = element_blank(),
+            axis.line = element_line(colour = "black"),
+            panel.grid.minor = element_blank(),
+            panel.border = element_blank(),
+            panel.background = element_blank(),
+            legend.position = "none",
+            legend.text = element_text(face = 'bold'),
+            legend.title = element_text(face = 'bold'))
 
-ggsave(
-      filename = "snookbass_abund_mapannualreport2025.tiff",
-      path = "plots/",
-      width = 14, height = 10
-)
+ggsave('plots/usace-annual-report-2025/snook-abund-cpue-usace-2025-annual-report.png',
+       dpi = 600, units= 'in', height = 4, width = 8)
 
 mc_ts |> 
-      ggplot(aes(x = s_date, y = cpue_bm_kg, group = common_name, color = common_name)) +
-      geom_line() +  # Add line plot
-      labs(x = "Sample Date",
-           y = "CPUE (kg/100 m)") +
+      mutate(s_date = make_date(year = calendar_year, month = month, day = 1)) |> 
+      filter(common_name == "Largemouth bass") |> 
+      ggplot(aes(x = s_date, y = cpue_abund, 
+                 group = common_name, color = common_name)) +
+      geom_line(size = 1.3) +  # Add line plot
+      labs(x = "Year-Month",
+           y = "Bass Mean Monthly CPUE (#/100 m)") +
       theme_classic() +
-      scale_color_manual(values = c("Snook" = "darkblue", "Largemouth bass" = "darkgreen")) +
-      # scale_color_brewer(palette = "Set1") +  # This adds a nice set of colors, but you can choose any palette
+      scale_y_continuous(breaks = c(0,5,10,15,20,25,30,35), limits = c(0,36)) +
+      scale_color_manual(values = c("Snook" = "#003153", "Largemouth bass" = "#49796B")) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
       scale_x_date(date_breaks = "1 year", date_labels = "%Y") + 
-      theme(panel.background = element_rect(fill = "white"),
-            axis.title = element_text(face = "bold", size = 12),
-            axis.line = element_line("black"),
-            axis.text = element_text(face = "bold", size = 12),
-            legend.title = element_blank(),
-            legend.text = element_text(face = "bold", size = 12),
-            legend.position = "bottom")
+      theme(axis.text = element_text(size = 8, face = "bold", colour = "black"),
+            axis.title = element_text(size = 10, face = "bold", colour = "black"),
+            plot.title = element_text(size = 10, face = "bold", colour = "black"),
+            panel.grid.major = element_blank(),
+            axis.line = element_line(colour = "black"),
+            panel.grid.minor = element_blank(),
+            panel.border = element_blank(),
+            panel.background = element_blank(),
+            legend.position = "none",
+            legend.text = element_text(face = 'bold'),
+            legend.title = element_text(face = 'bold'))
 
-ggsave(
-      filename = "mc_bm_mapannualreport2025.tiff",
-      path = "plots/",
-      width = 14, height = 10
-)
+ggsave('plots/usace-annual-report-2025/bass-abund-cpue-usace-2025-annual-report.png',
+       dpi = 600, units= 'in', height = 4, width = 8)
 
+### plot cpue for biomass ----
+mc_ts |> 
+      mutate(s_date = make_date(year = calendar_year, month = month, day = 1)) |> 
+      filter(common_name == "Snook") |> 
+      ggplot(aes(x = s_date, y = cpue_bm_kg, 
+                 group = common_name, color = common_name)) +
+      geom_line(size = 1.3) +  # Add line plot
+      labs(x = "Year-Month",
+           y = "Snook Mean Monthly CPUE (kg/100 m)") +
+      theme_classic() +
+      scale_y_continuous(breaks = c(0,5,10,15,20,25), limits = c(0,26)) +
+      scale_color_manual(values = c("Snook" = "#003153", "Largemouth bass" = "#49796B")) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      scale_x_date(date_breaks = "1 year", date_labels = "%Y") + 
+      theme(axis.text = element_text(size = 8, face = "bold", colour = "black"),
+            axis.title = element_text(size = 10, face = "bold", colour = "black"),
+            plot.title = element_text(size = 10, face = "bold", colour = "black"),
+            panel.grid.major = element_blank(),
+            axis.line = element_line(colour = "black"),
+            panel.grid.minor = element_blank(),
+            panel.border = element_blank(),
+            panel.background = element_blank(),
+            legend.position = "none",
+            legend.text = element_text(face = 'bold'),
+            legend.title = element_text(face = 'bold'))
+
+ggsave('plots/usace-annual-report-2025/snook-biomass-cpue-usace-2025-annual-report.png',
+       dpi = 600, units= 'in', height = 4, width = 8)
+
+mc_ts |> 
+      mutate(s_date = make_date(year = calendar_year, month = month, day = 1)) |> 
+      filter(common_name == "Largemouth bass") |> 
+      ggplot(aes(x = s_date, y = cpue_bm_kg, 
+                 group = common_name, color = common_name)) +
+      geom_line(size = 1.3) +  # Add line plot
+      labs(x = "Year-Month",
+           y = "Bass Mean Monthly CPUE (kg/100 m)") +
+      theme_classic() +
+      scale_y_continuous(breaks = c(0,5,10,15,20), limits = c(0,20)) +
+      scale_color_manual(values = c("Snook" = "#003153", "Largemouth bass" = "#49796B")) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      scale_x_date(date_breaks = "1 year", date_labels = "%Y") + 
+      theme(axis.text = element_text(size = 8, face = "bold", colour = "black"),
+            axis.title = element_text(size = 10, face = "bold", colour = "black"),
+            plot.title = element_text(size = 10, face = "bold", colour = "black"),
+            panel.grid.major = element_blank(),
+            axis.line = element_line(colour = "black"),
+            panel.grid.minor = element_blank(),
+            panel.border = element_blank(),
+            panel.background = element_blank(),
+            legend.position = "none",
+            legend.text = element_text(face = 'bold'),
+            legend.title = element_text(face = 'bold'))
+
+ggsave('plots/usace-annual-report-2025/bass-biomass-cpue-usace-2025-annual-report.png',
+       dpi = 600, units= 'in', height = 4, width = 8)
 ###########################################################################
 # task 10 prey-invasive cpue/biomass ts plots -----------------------------
 ###########################################################################
-
+### generate cpue estimates ----
 sf_ts <- dt |> 
       filter(genus == "Lepomis") |> 
       filter(site %in% c("RB8", "RB9", "RB10", "RB11", "RB13")) |> 
       mutate(s_date = make_date(year = calendar_year, month = month, day = 1)) |> 
-      group_by(genus, water_year, s_date, site, bout) |> 
+      group_by(genus, calendar_year, month, site, bout) |> 
       summarize(count = sum(catch_number, na.rm = TRUE),
                 count_m = count/distance,
                 count_100m = count_m*100,
@@ -436,10 +509,15 @@ sf_ts <- dt |>
                 biomass_m = biomass/distance,
                 biomass_100m = biomass_m*100) |> 
       ungroup() |> 
-      group_by(genus, water_year, s_date) |> 
+      group_by(genus, calendar_year, month, site) |> 
       summarize(cpue_abund = mean(count_100m),
                 cpue_bm_g = mean(biomass_100m),
                 cpue_bm_kg = cpue_bm_g/1000) |> 
+      ungroup() |> 
+      group_by(genus, calendar_year, month) |> 
+      summarize(cpue_abund = mean(cpue_abund),
+                cpue_bm_g = mean(cpue_bm_g),
+                cpue_bm_kg = mean(cpue_bm_kg)) |> 
       ungroup() |> 
       mutate(prey = genus) |> 
       select(-genus)
@@ -448,7 +526,7 @@ inv_ts <- dt |>
       filter(status == "invasive") |> 
       filter(site %in% c("RB8", "RB9", "RB10", "RB11", "RB13")) |> 
       mutate(s_date = make_date(year = calendar_year, month = month, day = 1)) |> 
-      group_by(status, water_year, s_date, site, bout) |> 
+      group_by(status, calendar_year, month, site, bout) |> 
       summarize(count = sum(catch_number, na.rm = TRUE),
                 count_m = count/distance,
                 count_100m = count_m*100,
@@ -456,124 +534,135 @@ inv_ts <- dt |>
                 biomass_m = biomass/distance,
                 biomass_100m = biomass_m*100) |> 
       ungroup() |> 
-      group_by(status, water_year, s_date) |> 
+      group_by(status, calendar_year, month, site) |> 
       summarize(cpue_abund = mean(count_100m),
                 cpue_bm_g = mean(biomass_100m),
                 cpue_bm_kg = cpue_bm_g/1000) |> 
       ungroup() |> 
+      group_by(status, calendar_year, month) |> 
+      summarize(cpue_abund = mean(cpue_abund),
+                cpue_bm_g = mean(cpue_bm_g),
+                cpue_bm_kg = mean(cpue_bm_kg)) |> 
+      ungroup() |> 
       mutate(prey = status) |> 
       select(-status)
 
+### join sunfish and nonnative cpue estimates ----
 glimpse(sf_ts)
 glimpse(inv_ts)
 sf_inv_ts <- rbind(sf_ts, inv_ts)
 glimpse(sf_inv_ts)
 
+### generate abundance time series ----
 sf_inv_ts |> 
-      ggplot(aes(x = s_date, y = cpue_abund, group = prey, color = prey)) +
-      geom_line() +  # Add line plot
-      labs(x = "Sample Date",
-           y = "CPUE (#/100 m)") +
+      mutate(s_date = make_date(year = calendar_year, month = month, day = 1)) |> 
+      filter(prey == "Lepomis") |> 
+      ggplot(aes(x = s_date, y = cpue_abund, 
+                 group = prey, color = prey)) +
+      geom_line(size = 1.3) +  # Add line plot
+      labs(x = "Year-Month",
+           y = "Sunfish Mean Monthly CPUE (#/100 m)") +
       theme_classic() +
-      scale_color_manual(values = c("Lepomis" = "darkgreen", "invasive" = "darkred")) +
-      # scale_color_brewer(palette = "Set1") +  # This adds a nice set of colors, but you can choose any palette
+      scale_y_continuous(breaks = c(0,25,50,75,100,125), limits = c(0,133)) +
+      scale_color_manual(values = c("Lepomis" = "#6C5B7B", "invasive" = "#A44A3F")) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
       scale_x_date(date_breaks = "1 year", date_labels = "%Y") + 
-      theme(panel.background = element_rect(fill = "white"),
-            axis.title = element_text(face = "bold", size = 12),
-            axis.line = element_line("black"),
-            axis.text = element_text(face = "bold", size = 12),
-            legend.title = element_blank(),
-            legend.text = element_text(face = "bold", size = 12),
-            legend.position = "bottom")
+      theme(axis.text = element_text(size = 8, face = "bold", colour = "black"),
+            axis.title = element_text(size = 10, face = "bold", colour = "black"),
+            plot.title = element_text(size = 10, face = "bold", colour = "black"),
+            panel.grid.major = element_blank(),
+            axis.line = element_line(colour = "black"),
+            panel.grid.minor = element_blank(),
+            panel.border = element_blank(),
+            panel.background = element_blank(),
+            legend.position = "none",
+            legend.text = element_text(face = 'bold'),
+            legend.title = element_text(face = 'bold'))
 
-ggsave(
-      filename = "sf_inv_abund_mapannualreport2025.tiff",
-      path = "plots/",
-      width = 14, height = 10
-)
-
-sf_inv_ts |> 
-      ggplot(aes(x = s_date, y = cpue_bm_g, group = prey, color = prey)) +
-      geom_line() +  # Add line plot
-      labs(x = "Sample Date",
-           y = "CPUE (g/100 m)") +
-      theme_classic() +
-      scale_color_manual(values = c("Lepomis" = "darkgreen", "invasive" = "darkred")) +      # scale_color_brewer(palette = "Set1") +  # This adds a nice set of colors, but you can choose any palette
-      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-      scale_x_date(date_breaks = "1 year", date_labels = "%Y") + 
-      theme(panel.background = element_rect(fill = "white"),
-            axis.title = element_text(face = "bold", size = 12),
-            axis.line = element_line("black"),
-            axis.text = element_text(face = "bold", size = 12),
-            legend.title = element_blank(),
-            legend.text = element_text(face = "bold", size = 12),
-            legend.position = "bottom")
-
-ggsave(
-      filename = "sf_inv_bm_mapannualreport2025.tiff",
-      path = "plots/",
-      width = 14, height = 10
-)
-
-############ same as above but log-transformed for visualizing ##################
+ggsave('plots/usace-annual-report-2025/sunfish-abund-cpue-usace-2025-annual-report.png',
+       dpi = 600, units= 'in', height = 4, width = 8)
 
 sf_inv_ts |> 
-      ggplot(aes(x = s_date, y = log1p(cpue_abund), group = prey, color = prey)) +
-      geom_line() +  # Add line plot
-      labs(x = "Sample Date",
-           y = "CPUE (#/100 m)") +
+      mutate(s_date = make_date(year = calendar_year, month = month, day = 1)) |> 
+      filter(prey == "invasive") |> 
+      ggplot(aes(x = s_date, y = cpue_abund, 
+                 group = prey, color = prey)) +
+      geom_line(size = 1.3) +  # Add line plot
+      labs(x = "Year-Month",
+           y = "Non-native Mean Monthly CPUE (#/100 m)") +
       theme_classic() +
-      scale_color_manual(values = c("Lepomis" = "darkgreen", "invasive" = "darkred")) +
-      # scale_color_brewer(palette = "Set1") +  # This adds a nice set of colors, but you can choose any palette
+      scale_y_continuous(breaks = c(0,15,30,45,60,75), limits = c(0,77)) +
+      scale_color_manual(values = c("Lepomis" = "#6C5B7B", "invasive" = "#A44A3F")) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
       scale_x_date(date_breaks = "1 year", date_labels = "%Y") + 
-      theme(panel.background = element_rect(fill = "white"),
-            axis.title = element_text(face = "bold", size = 12),
-            axis.line = element_line("black"),
-            axis.text = element_text(face = "bold", size = 12),
-            legend.title = element_blank(),
-            legend.text = element_text(face = "bold", size = 12),
-            legend.position = "bottom")
+      theme(axis.text = element_text(size = 8, face = "bold", colour = "black"),
+            axis.title = element_text(size = 10, face = "bold", colour = "black"),
+            plot.title = element_text(size = 10, face = "bold", colour = "black"),
+            panel.grid.major = element_blank(),
+            axis.line = element_line(colour = "black"),
+            panel.grid.minor = element_blank(),
+            panel.border = element_blank(),
+            panel.background = element_blank(),
+            legend.position = "none",
+            legend.text = element_text(face = 'bold'),
+            legend.title = element_text(face = 'bold'))
 
-ggsave(
-      filename = "LOG1P_sf_inv_abund_mapannualreport2025.tiff",
-      path = "plots/",
-      width = 14, height = 10
-)
+ggsave('plots/usace-annual-report-2025/nonnative-abund-cpue-usace-2025-annual-report.png',
+       dpi = 600, units= 'in', height = 4, width = 8)
+
+### generate biomass timeseries ----
+sf_inv_ts |> 
+      mutate(s_date = make_date(year = calendar_year, month = month, day = 1)) |> 
+      filter(prey == "Lepomis") |> 
+      ggplot(aes(x = s_date, y = cpue_bm_kg, 
+                 group = prey, color = prey)) +
+      geom_line(size = 1.3) +  # Add line plot
+      labs(x = "Year-Month",
+           y = "Sunfish Mean Monthly CPUE (kg/100 m)") +
+      theme_classic() +
+      # scale_y_continuous(breaks = c(0,25,50,75,100,125), limits = c(0,133)) +
+      scale_color_manual(values = c("Lepomis" = "#6C5B7B", "invasive" = "#A44A3F")) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      scale_x_date(date_breaks = "1 year", date_labels = "%Y") + 
+      theme(axis.text = element_text(size = 8, face = "bold", colour = "black"),
+            axis.title = element_text(size = 10, face = "bold", colour = "black"),
+            plot.title = element_text(size = 10, face = "bold", colour = "black"),
+            panel.grid.major = element_blank(),
+            axis.line = element_line(colour = "black"),
+            panel.grid.minor = element_blank(),
+            panel.border = element_blank(),
+            panel.background = element_blank(),
+            legend.position = "none",
+            legend.text = element_text(face = 'bold'),
+            legend.title = element_text(face = 'bold'))
+
+ggsave('plots/usace-annual-report-2025/sunfish-biomass-cpue-usace-2025-annual-report.png',
+       dpi = 600, units= 'in', height = 4, width = 8)
 
 sf_inv_ts |> 
-      ggplot(aes(x = s_date, y = log1p(cpue_bm_g), group = prey, color = prey)) +
-      geom_line() +  # Add line plot
-      labs(x = "Sample Date",
-           y = "CPUE (g/100 m)") +
+      mutate(s_date = make_date(year = calendar_year, month = month, day = 1)) |> 
+      filter(prey == "invasive") |> 
+      ggplot(aes(x = s_date, y = cpue_bm_kg, 
+                 group = prey, color = prey)) +
+      geom_line(size = 1.3) +  # Add line plot
+      labs(x = "Year-Month",
+           y = "Non-native Mean Monthly CPUE (kg/100 m)") +
       theme_classic() +
-      scale_color_manual(values = c("Lepomis" = "darkgreen", "invasive" = "darkred")) +      # scale_color_brewer(palette = "Set1") +  # This adds a nice set of colors, but you can choose any palette
+      scale_y_continuous(breaks = c(0,2,4,6,8,10,12), limits = c(0,12.5)) +
+      scale_color_manual(values = c("Lepomis" = "#6C5B7B", "invasive" = "#A44A3F")) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
       scale_x_date(date_breaks = "1 year", date_labels = "%Y") + 
-      theme(panel.background = element_rect(fill = "white"),
-            axis.title = element_text(face = "bold", size = 12),
-            axis.line = element_line("black"),
-            axis.text = element_text(face = "bold", size = 12),
-            legend.title = element_blank(),
-            legend.text = element_text(face = "bold", size = 12),
-            legend.position = "bottom")
+      theme(axis.text = element_text(size = 8, face = "bold", colour = "black"),
+            axis.title = element_text(size = 10, face = "bold", colour = "black"),
+            plot.title = element_text(size = 10, face = "bold", colour = "black"),
+            panel.grid.major = element_blank(),
+            axis.line = element_line(colour = "black"),
+            panel.grid.minor = element_blank(),
+            panel.border = element_blank(),
+            panel.background = element_blank(),
+            legend.position = "none",
+            legend.text = element_text(face = 'bold'),
+            legend.title = element_text(face = 'bold'))
 
-ggsave(
-      filename = "LOG1P_sf_inv_bm_mapannualreport2025.tiff",
-      path = "plots/",
-      width = 14, height = 10
-)
-
-###########################################################################
-# task 11a: snook river km-metric relationships
-###########################################################################
-
-# sites <- dt |> 
-#       select(site) |> 
-#       distinct()
-# writexl::write_xlsx(sites, "data/sites.xlsx")
-# 
-# site_w_ds_distance <- read_csv("data/sites_with_coordinates_ds_distance.csv")
-# dt_distance <- left_join(dt, site_w_ds_distance)
-
+ggsave('plots/usace-annual-report-2025/nonnative-biomass-cpue-usace-2025-annual-report.png',
+       dpi = 600, units= 'in', height = 4, width = 8)
