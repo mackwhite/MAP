@@ -25,7 +25,11 @@ mean_se_data <- data2 |>
       filter(year %in% c(1994:2025)) |> 
       summarise(mean_stage = mean(`Stage (cm)`),
                 se = sd(`Stage (cm)`) / sqrt(n())) |> 
-      mutate(period = "POR")
+      mutate(period = "POR") |> 
+      mutate(season = case_when(
+            day_of_year >= 1 & day_of_year <= 180 ~ "dry",
+            TRUE ~ "wet"
+      ))
 
 mean_se_datapre <- data2 |> 
       group_by(day_of_year) |> 
@@ -96,45 +100,49 @@ year_palette <- c("2020" = "#D8E8F8",
 
 # generate breaks + labels for plotting -----------------------------------
 breaks <- yday(as.Date(paste0("2023-", 1:12, "-01")))
-labels <- month.name[1:12]
-
+# labels <- month.name[1:12]
+labels <- 1:12
 # generate plot -----------------------------------------------------------
 ggplot() +
-      geom_line(data = filtered_data, 
-                aes(x = day_of_year, y = `Stage (cm)`, color = as.factor(year)), size = 1) +
+      # geom_line(data = filtered_data, 
+      #           aes(x = day_of_year, y = `Stage (cm)`, color = as.factor(year)), size = 1) +
       # geom_line(data = projection_df,
       #           aes(x = day_of_year, y = Stage_cm), color = "red", size = 1, linetype = "dotted") +
       geom_line(data = mean_se_data, 
-                aes(x = day_of_year, y = mean_stage), size = 1.5, color = "black") +
+                aes(x = day_of_year, y = mean_stage, color = season), size = 1.5,) +
       geom_ribbon(data = mean_se_data, 
-                  aes(x = day_of_year, ymin = mean_stage - se, ymax = mean_stage + se), fill = "#6E6E6E", alpha = 0.2) +
-      scale_x_continuous(breaks = breaks, labels = labels) +
-      scale_y_continuous(breaks = c(0,10,20,30,40,50,60,70,80,90,100)) +
-      geom_hline(yintercept = 30, color = "black", size = 1) +
-      geom_hline(yintercept = 10, color = "black", size = 1) +
-      scale_color_manual(values = year_palette) +
-      labs(title = "Daily MO-215 Water Levels w/ Mean + Standard Error (1994-Present)",
-           x = "Month",
-           y = "Stage (cm)",
-           color = "Calendar Year") +
+                  aes(x = day_of_year, ymin = mean_stage - se, 
+                      ymax = mean_stage + se, fill = season), alpha = 0.2) +
+      scale_color_manual(values = c("dry" = "#E69F00", "wet" = "#56B4E9")) + 
+      scale_fill_manual(values = c("dry" = "#E69F00", "wet" = "#56B4E9")) +
+      scale_x_continuous(breaks = breaks, labels = labels, limits = c(0,365)) +
+      scale_y_continuous(breaks = c(0,10,20,30,40,50,60)) +
+      geom_hline(yintercept = 30, color = "black", size = 1.5, linetype = 3) +
+      labs(x = "Month",
+           y = "Marsh Stage (cm)",
+           color = "Season", 
+           fill = "Season") +
       theme_minimal() + 
+      annotate("text", x = 270, y = 32, label = "Loss of Marsh Habitat", 
+               size = 3.5, fontface = "bold") + 
       theme(plot.title = element_text(hjust = 0.5, face = "bold"),
             axis.title = element_text(hjust = 0.5, face = "bold"),
             axis.text = element_text(hjust = 0.5, face = "bold"),
             legend.text = element_text(hjust = 0.5, face = "bold"),
             legend.title = element_text(hjust = 0.5, face = "bold"),
-            legend.position = c(0.9,0.25),
+            legend.position = c(0.07,0.90),
             plot.background = element_rect(fill = "white"),
-            legend.background = element_rect(fill = "white", colour = "black"),
+            # legend.background = element_rect(fill = "white"),
             panel.grid.minor.y = element_blank(),
             panel.grid.minor.x = element_blank(),
+            panel.grid.major.y = element_blank(),
+            panel.grid.major.x = element_blank(),
             axis.line = element_line(color = "black")) 
 
-ggsave(filename = "plots/hydro/mo215_usace_2025_q1_report.png",
+ggsave(filename = "plots/hydro/mean-water-levels-by-season.png",
        plot = last_plot(),
-       width = 10, height = 5,
+       width = 8, height = 5,
        dpi = 600)
-
 
 # generate mean, pre2020, and post2020 figure -----------------------------
 
@@ -154,10 +162,10 @@ ggplot() +
                 aes(x = day_of_year, y = mean_stage, color = period), size = 1.5) +
       geom_ribbon(data = mean_se_datapost, 
                   aes(x = day_of_year, ymin = mean_stage - se, ymax = mean_stage + se, fill = period), alpha = 0.3) +
-      scale_x_continuous(breaks = breaks, labels = labels) +
+      scale_x_continuous(breaks = breaks, labels = labels, , limits = c(0,365)) +
       scale_y_continuous(breaks = c(0,10,20,30,40,50,60,70,80,90,100)) +
-      # geom_hline(yintercept = 30, color = "black", size = 1) +
       geom_hline(yintercept = 15.1, color = "black", size = 1.5, linetype = 3) +
+      geom_hline(yintercept = 30, color = "black", size = 1.5, linetype = 3) +
       scale_color_manual(values = period_palette) +
       scale_fill_manual(values = period_palette) +
       labs(x = "Month",
@@ -170,9 +178,9 @@ ggplot() +
             axis.text = element_text(hjust = 0.5, face = "bold", color = "black"),
             legend.text = element_text(hjust = 0.5, face = "bold", color = "black"),
             legend.title = element_text(hjust = 0.5, face = "bold", color = "black"),
-            legend.position = c(0.80,0.15),
+            legend.position = c(0.12,0.90),
             plot.background = element_rect(fill = "white"),
-            legend.background = element_rect(fill = "white", colour = "black"),
+            # legend.background = element_rect(fill = "white"),
             panel.grid.minor.y = element_blank(),
             panel.grid.minor.x = element_blank(),
             panel.grid.major.y = element_blank(),
@@ -181,5 +189,5 @@ ggplot() +
 
 ggsave(filename = "plots/hydro/mo215_hydro_pre_post_2020.png",
        plot = last_plot(),
-       width = 10, height = 5,
+       width = 8, height = 5,
        dpi = 600)
