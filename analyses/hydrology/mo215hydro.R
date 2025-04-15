@@ -178,8 +178,9 @@ ggplot() +
             axis.text = element_text(hjust = 0.5, face = "bold", color = "black"),
             legend.text = element_text(hjust = 0.5, face = "bold", color = "black"),
             legend.title = element_text(hjust = 0.5, face = "bold", color = "black"),
-            legend.position = c(0.12,0.90),
-            plot.background = element_rect(fill = "white"),
+            legend.position = c(0.05,0.90),
+            plot.background = element_blank(),
+            # plot.background = element_rect(fill = "white"),
             # legend.background = element_rect(fill = "white"),
             panel.grid.minor.y = element_blank(),
             panel.grid.minor.x = element_blank(),
@@ -189,5 +190,5 @@ ggplot() +
 
 ggsave(filename = "plots/hydro/mo215_hydro_pre_post_2020.png",
        plot = last_plot(),
-       width = 8, height = 5,
+       width = 15, height = 5,
        dpi = 600)
